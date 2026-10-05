@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { requireUser } from '#lib/server/auth-guard.ts';
 import { deleteOwnedPet, getOwnedPet, updateOwnedPet } from '#lib/server/pets.ts';
-import { addWeight, deleteWeight, listWeights } from '#lib/server/weights.ts';
+import { addWeight, deleteWeight, listWeights, updateWeight } from '#lib/server/weights.ts';
 import { parsePetForm } from '#lib/pet-form.ts';
 import { parseWeightForm } from '#lib/weight-form.ts';
 import type { Actions, PageServerLoad } from './$types';
@@ -51,6 +51,29 @@ export const actions: Actions = {
 		const entry = await addWeight(user.id, params.id, result.value);
 		if (!entry) error(404, 'Nem található ilyen kedvenc.');
 		return { weightSaved: true as const };
+	},
+
+	weightUpdate: async ({ request, locals, params }) => {
+		const user = requireUser(locals);
+		const formData = await request.formData();
+		const entryId = formData.get('entryId');
+		if (typeof entryId !== 'string') error(400, 'Hiányzó azonosító.');
+
+		const result = parseWeightForm(formData);
+		if (!result.ok) {
+			// The entryId tells the page which row the errors belong to.
+			return fail(400, {
+				weightUpdateFailed: true as const,
+				weightUpdateEntryId: entryId,
+				weightUpdateErrors: result.errors,
+				weightUpdateValues: result.values
+			});
+		}
+
+		// Ownership is checked inside updateWeight (pet AND entry).
+		const entry = await updateWeight(user.id, params.id, entryId, result.value);
+		if (!entry) error(404, 'Nem található ilyen bejegyzés.');
+		return { weightUpdated: true as const };
 	},
 
 	weightDelete: async ({ request, locals, params }) => {
