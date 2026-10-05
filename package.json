@@ -52,6 +52,8 @@
 		"#lib/*": "./src/lib/*"
 	},
 	"dependencies": {
+		"@imagekit/javascript": "^5.5.1",
+		"@imagekit/nodejs": "^7.12.1",
 		"@picocss/pico": "^2.1.1",
 		"chart.js": "^4.5.1",
 		"nodemailer": "^10.0.14"

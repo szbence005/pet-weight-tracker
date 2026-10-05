@@ -4,6 +4,8 @@ import { deleteOwnedPet, getOwnedPet, updateOwnedPet } from '#lib/server/pets.ts
 import { addWeight, deleteWeight, listWeights, updateWeight } from '#lib/server/weights.ts';
 import { parsePetForm } from '#lib/pet-form.ts';
 import { parseWeightForm } from '#lib/weight-form.ts';
+import { createPhoto, deletePhoto, listPhotos } from '#lib/server/photos.ts';
+import { imageHost } from '#lib/server/imagekit.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals, params }) => {
@@ -12,7 +14,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	// 404 (not 403): do not reveal that the pet exists for somebody else.
 	if (!pet) error(404, 'Nem található ilyen kedvenc.');
 	const weights = (await listWeights(user.id, params.id)) ?? [];
-	return { pet, weights };
+	// Signed URLs are created here, only after getOwnedPet passed above.
+	const photos = (await listPhotos(user.id, params.id, imageHost)) ?? [];
+	return { pet, weights, photos };
 };
 
 export const actions: Actions = {
@@ -74,6 +78,39 @@ export const actions: Actions = {
 		const entry = await updateWeight(user.id, params.id, entryId, result.value);
 		if (!entry) error(404, 'Nem található ilyen bejegyzés.');
 		return { weightUpdated: true as const };
+	},
+
+	photoAdd: async ({ request, locals, params }) => {
+		const user = requireUser(locals);
+		const formData = await request.formData();
+		const fileId = formData.get('fileId');
+		const caption = formData.get('caption');
+		if (typeof fileId !== 'string') {
+			return fail(400, { photoError: 'Hiányzó fájlazonosító.' });
+		}
+
+		// createPhoto checks ownership and asks ImageKit about the file itself.
+		const result = await createPhoto(user.id, params.id, imageHost, {
+			fileId,
+			caption: typeof caption === 'string' ? caption : null
+		});
+		if (!result.ok) {
+			if (result.reason === 'pet_not_found') error(404, 'Nem található ilyen kedvenc.');
+			return fail(400, {
+				photoError: 'A fájl nem fogadható el (JPEG, PNG vagy WebP, legfeljebb 5 MB lehet).'
+			});
+		}
+		return { photoSaved: true as const };
+	},
+
+	photoDelete: async ({ request, locals, params }) => {
+		const user = requireUser(locals);
+		const photoId = (await request.formData()).get('photoId');
+		if (typeof photoId !== 'string') error(400, 'Hiányzó azonosító.');
+
+		const deleted = await deletePhoto(user.id, params.id, photoId, imageHost);
+		if (!deleted) error(404, 'Nem található ilyen fotó.');
+		return { photoDeleted: true as const };
 	},
 
 	weightDelete: async ({ request, locals, params }) => {

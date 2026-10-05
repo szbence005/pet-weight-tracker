@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import Chart from 'chart.js/auto';
 	import { SPECIES } from '#lib/pet-form.ts';
+	import PhotoGallery from '#lib/components/PhotoGallery.svelte';
 	import { formatWeight, gramsToKg, type WeightUnit } from '#lib/units.ts';
 	import type { PageProps } from './$types';
 
@@ -55,10 +56,10 @@
 
 <h2>Súly</h2>
 
-<fieldset role="group">
+<div role="group">
 	<button type="button" class:outline={unit !== 'kg'} onclick={() => (unit = 'kg')}>kg</button>
 	<button type="button" class:outline={unit !== 'g'} onclick={() => (unit = 'g')}>g</button>
-</fieldset>
+</div>
 
 {#if data.weights.length === 0}
 	<p>Még nincs mérés. Add hozzá az elsőt az alábbi űrlappal.</p>
@@ -147,6 +148,8 @@
 </details>
 
 <hr />
+
+<PhotoGallery petId={data.pet.id} photos={data.photos} />
 
 <h2>Adatok</h2>
 

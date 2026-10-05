@@ -13,5 +13,10 @@ export const variables = defineEnvVars({
 	SMTP_PORT: { description: 'SMTP server port, e.g. `587` (STARTTLS).' },
 	SMTP_USER: { description: 'SMTP login (Brevo: the SMTP login address).' },
 	SMTP_PASSWORD: { description: 'SMTP key (secret). Not the Brevo API key.' },
-	MAIL_FROM: { description: 'Sender address, must be a verified sender in Brevo.' }
+	MAIL_FROM: { description: 'Sender address, must be a verified sender in Brevo.' },
+	IMAGEKIT_PUBLIC_KEY: { description: 'ImageKit public key (sent to the browser for uploads).' },
+	IMAGEKIT_PRIVATE_KEY: { description: 'ImageKit private key (secret, server only).' },
+	IMAGEKIT_URL_ENDPOINT: {
+		description: 'ImageKit URL endpoint, e.g. `https://ik.imagekit.io/your_id`.'
+	}
 });
