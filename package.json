@@ -50,5 +50,9 @@
 	"imports": {
 		"#lib": "./src/lib/index.js",
 		"#lib/*": "./src/lib/*"
+	},
+	"dependencies": {
+		"@picocss/pico": "^2.1.1",
+		"chart.js": "^4.5.1"
 	}
 }
