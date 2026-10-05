@@ -21,7 +21,7 @@
 	<div class="grid">
 		{#each data.pets as pet (pet.id)}
 			<article>
-				<h3>{pet.name}</h3>
+				<h3><a href="/pets/{pet.id}">{pet.name}</a></h3>
 				<p>
 					{pet.species}{#if pet.breed}&nbsp;· {pet.breed}{/if}
 				</p>
@@ -34,6 +34,7 @@
 {/if}
 
 <details open={data.pets.length === 0 || failed !== null}>
+	<!-- svelte-ignore a11y_no_redundant_roles -->
 	<summary role="button" class="secondary">Új kedvenc hozzáadása</summary>
 
 	<form method="post" action="?/create" use:enhance>

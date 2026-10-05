@@ -33,3 +33,29 @@ export async function createPet(userId: string, input: PetInput) {
 		.returning();
 	return pet;
 }
+
+// Updates a pet only if it belongs to the user. Returns the updated pet,
+// or undefined when it does not exist or is somebody else's.
+export async function updateOwnedPet(userId: string, petId: string, input: PetInput) {
+	if (!UUID_RE.test(petId)) return undefined;
+
+	const [pet] = await db
+		.update(pets)
+		.set(input)
+		.where(and(eq(pets.id, petId), eq(pets.ownerId, userId)))
+		.returning();
+
+	return pet;
+}
+
+// Deletes a pet only if it belongs to the user. Returns true if a row was deleted.
+export async function deleteOwnedPet(userId: string, petId: string): Promise<boolean> {
+	if (!UUID_RE.test(petId)) return false;
+
+	const deleted = await db
+		.delete(pets)
+		.where(and(eq(pets.id, petId), eq(pets.ownerId, userId)))
+		.returning({ id: pets.id });
+
+	return deleted.length > 0;
+}
