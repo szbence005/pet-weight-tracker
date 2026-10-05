@@ -1,2 +1,3 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
+<h1>Pet Weight Tracker</h1>
+<p>Kövesd a kedvenceid súlyát az idő függvényében.</p>
+<p><a href="/pets" role="button">Tovább a kedvenceimhez</a></p>

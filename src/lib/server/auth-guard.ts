@@ -4,7 +4,7 @@ import { redirect } from '@sveltejs/kit';
 // Returns the logged-in user, or sends the visitor to the login page.
 export function requireUser(locals: App.Locals) {
 	if (!locals.user) {
-		redirect(303, '/demo/better-auth/login');
+		redirect(303, '/login');
 	}
 	return locals.user;
 }
