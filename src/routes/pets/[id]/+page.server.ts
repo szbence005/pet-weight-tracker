@@ -7,7 +7,7 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals, params }) => {
 	const user = requireUser(locals);
 	const pet = await getOwnedPet(user.id, params.id);
-	// 404 (not 403): do not reveal that somebody else's pet exists.
+	// 404 (not 403): do not reveal that the pet exists for somebody else.
 	if (!pet) error(404, 'Nem található ilyen kedvenc.');
 	return { pet };
 };
@@ -21,8 +21,8 @@ export const actions: Actions = {
 			return fail(400, { success: false as const, errors: result.errors, values: result.values });
 		}
 
-		const updated = await updateOwnedPet(user.id, params.id, result.value);
-		if (!updated) error(404, 'Nem található ilyen kedvenc.');
+		const pet = await updateOwnedPet(user.id, params.id, result.value);
+		if (!pet) error(404, 'Nem található ilyen kedvenc.');
 		return { success: true as const };
 	},
 
