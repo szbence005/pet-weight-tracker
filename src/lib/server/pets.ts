@@ -1,6 +1,7 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.ts';
 import { pets } from '#lib/server/db/schema.ts';
+import type { PetInput } from '#lib/pet-form.ts';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -16,5 +17,19 @@ export async function getOwnedPet(userId: string, petId: string) {
 		.where(and(eq(pets.id, petId), eq(pets.ownerId, userId)))
 		.limit(1);
 
+	return pet;
+}
+
+// All pets of one user, newest first.
+export async function listPets(userId: string) {
+	return db.select().from(pets).where(eq(pets.ownerId, userId)).orderBy(desc(pets.createdAt));
+}
+
+// The owner always comes from the logged-in user, never from the form.
+export async function createPet(userId: string, input: PetInput) {
+	const [pet] = await db
+		.insert(pets)
+		.values({ ownerId: userId, ...input })
+		.returning();
 	return pet;
 }
