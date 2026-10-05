@@ -1,25 +1,17 @@
-const GRAMS_PER_LB = 453.59237;
-
-export type WeightUnit = 'kg' | 'lb';
+export type WeightUnit = 'g' | 'kg';
 
 export function gramsToKg(grams: number): number {
 	return grams / 1000;
 }
 
-export function gramsToLb(grams: number): number {
-	return grams / GRAMS_PER_LB;
-}
-
-// Form input -> value stored in the database (always whole grams).
+// Form input (kg, may be fractional) -> value stored in the database (whole grams).
 export function kgToGrams(kg: number): number {
 	return Math.round(kg * 1000);
 }
 
-export function lbToGrams(lb: number): number {
-	return Math.round(lb * GRAMS_PER_LB);
-}
-
+// Shown to the user: "4250 g" or "4,25 kg" (at most 3 decimals, decimal comma).
 export function formatWeight(grams: number, unit: WeightUnit): string {
-	const value = unit === 'kg' ? gramsToKg(grams) : gramsToLb(grams);
-	return `${value.toFixed(2)} ${unit}`;
+	if (unit === 'g') return `${grams} g`;
+	const kg = Number(gramsToKg(grams).toFixed(3));
+	return `${String(kg).replace('.', ',')} kg`;
 }
