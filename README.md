@@ -130,3 +130,7 @@ The app is deployed on Vercel from the Git repository. When the schema changes, 
 - The Hungarian turtle species names are not verified by an expert.
 - Habitats have no history yet (a pet that moves between habitats is simply in several).
 - Browser end-to-end tests (Playwright) are not written yet.
+
+## License
+
+MIT, see the [LICENSE](LICENSE) file.
