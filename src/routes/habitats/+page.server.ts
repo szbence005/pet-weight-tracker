@@ -6,22 +6,22 @@ import { getT } from '#lib/i18n/index.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-    const user = requireUser(locals);
-    const habitats = await listHabitats(user.id);
-    return { habitats };
+	const user = requireUser(locals);
+	const habitats = await listHabitats(user.id);
+	return { habitats };
 };
 
 export const actions: Actions = {
-    create: async ({ request, locals }) => {
-        const user = requireUser(locals);
-        const result = parseHabitatForm(await request.formData(), getT(locals.locale));
+	create: async ({ request, locals }) => {
+		const user = requireUser(locals);
+		const result = parseHabitatForm(await request.formData(), getT(locals.locale));
 
-        if (!result.ok) {
-            return fail(400, { success: false as const, errors: result.errors, values: result.values });
-        }
+		if (!result.ok) {
+			return fail(400, { success: false as const, errors: result.errors, values: result.values });
+		}
 
-        const habitat = await createHabitat(user.id, result.value);
-        // Go straight to the new habitat so the pets can be added.
-        redirect(303, `/habitats/${habitat.id}`);
-    }
+		const habitat = await createHabitat(user.id, result.value);
+		// Go straight to the new habitat so the pets can be added.
+		redirect(303, `/habitats/${habitat.id}`);
+	}
 };

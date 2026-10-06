@@ -16,17 +16,17 @@ Originally built for tracking the growth of pet turtles, but it works for any pe
 
 ## Tech stack
 
-| Area | Choice |
-| --- | --- |
-| Framework | SvelteKit with Svelte 5, TypeScript |
-| Styling | Pico CSS plus a small custom stylesheet |
-| Authentication | better-auth (email and password) |
-| Database | PostgreSQL (Neon) with Drizzle ORM |
-| Image storage | ImageKit (private files, signed URLs) |
-| Email | nodemailer over SMTP |
-| Hosting | Vercel |
-| Tests | Vitest |
-| Code quality | Prettier, ESLint, `svelte-check` |
+| Area           | Choice                                  |
+| -------------- | --------------------------------------- |
+| Framework      | SvelteKit with Svelte 5, TypeScript     |
+| Styling        | Pico CSS plus a small custom stylesheet |
+| Authentication | better-auth (email and password)        |
+| Database       | PostgreSQL (Neon) with Drizzle ORM      |
+| Image storage  | ImageKit (private files, signed URLs)   |
+| Email          | nodemailer over SMTP                    |
+| Hosting        | Vercel                                  |
+| Tests          | Vitest                                  |
+| Code quality   | Prettier, ESLint, `svelte-check`        |
 
 ## Project layout
 
@@ -61,14 +61,14 @@ npm install
 
 Create a `.env` file in the project root (it must never be committed). The variables the code reads:
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string. Use a **development** database locally. |
-| `ORIGIN` | Public URL of the app, for example `http://localhost:5173` |
-| `BETTER_AUTH_SECRET` | Long random secret for better-auth |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | SMTP server (port 587 with STARTTLS) |
-| `MAIL_FROM` | Sender address of the emails |
-| ImageKit keys | Public key, private key and URL endpoint; see `src/lib/server/imagekit.ts` for the exact names |
+| Variable                                               | Purpose                                                                                        |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                         | PostgreSQL connection string. Use a **development** database locally.                          |
+| `ORIGIN`                                               | Public URL of the app, for example `http://localhost:5173`                                     |
+| `BETTER_AUTH_SECRET`                                   | Long random secret for better-auth                                                             |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | SMTP server (port 587 with STARTTLS)                                                           |
+| `MAIL_FROM`                                            | Sender address of the emails                                                                   |
+| ImageKit keys                                          | Public key, private key and URL endpoint; see `src/lib/server/imagekit.ts` for the exact names |
 
 Create the tables and start the dev server:
 
@@ -79,15 +79,15 @@ npm run dev
 
 ## Scripts
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Start the development server |
-| `npm run build` | Production build |
-| `npm run format` | Format the code with Prettier |
-| `npm run check` | Type and Svelte checks |
-| `npm run lint` | Prettier check and ESLint |
-| `npm run test:unit -- --run` | Run the unit tests once |
-| `npm run db:push` | Push the Drizzle schema to the database in `DATABASE_URL` |
+| Command                      | What it does                                              |
+| ---------------------------- | --------------------------------------------------------- |
+| `npm run dev`                | Start the development server                              |
+| `npm run build`              | Production build                                          |
+| `npm run format`             | Format the code with Prettier                             |
+| `npm run check`              | Type and Svelte checks                                    |
+| `npm run lint`               | Prettier check and ESLint                                 |
+| `npm run test:unit -- --run` | Run the unit tests once                                   |
+| `npm run db:push`            | Push the Drizzle schema to the database in `DATABASE_URL` |
 
 Some tests use the database configured in `DATABASE_URL`. Run them only against a development database, never against production.
 
