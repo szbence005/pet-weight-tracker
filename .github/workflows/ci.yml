@@ -33,6 +33,9 @@ jobs:
       SMTP_USER: ci-user
       SMTP_PASSWORD: ci-only-dummy-password
       MAIL_FROM: ci@example.com
+      IMAGEKIT_PUBLIC_KEY: public_ci_dummy
+      IMAGEKIT_PRIVATE_KEY: private_ci_dummy
+      IMAGEKIT_URL_ENDPOINT: https://ik.imagekit.io/ci-dummy
 
     steps:
       - uses: actions/checkout@v4
