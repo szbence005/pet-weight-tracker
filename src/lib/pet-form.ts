@@ -1,13 +1,33 @@
+import { getT, type MessageKey, type Translate } from './i18n/index.ts';
+
 export const SPECIES = [
-	'teknős',
+	'tekn\u0151s',
 	'kutya',
 	'macska',
-	'nyúl',
-	'hörcsög',
-	'madár',
+	'ny\u00fal',
+	'h\u00f6rcs\u00f6g',
+	'mad\u00e1r',
 	'hal',
-	'egyéb'
+	'egy\u00e9b'
 ] as const;
+
+// The stored value stays Hungarian; this only decides how a species is shown.
+const SPECIES_LABEL_KEYS: Record<(typeof SPECIES)[number], MessageKey> = {
+	'tekn\u0151s': 'species.turtle',
+	kutya: 'species.dog',
+	macska: 'species.cat',
+	'ny\u00fal': 'species.rabbit',
+	'h\u00f6rcs\u00f6g': 'species.hamster',
+	'mad\u00e1r': 'species.bird',
+	hal: 'species.fish',
+	'egy\u00e9b': 'species.other'
+};
+
+/** The display name of a stored species; unknown values are shown as they are. */
+export function speciesLabel(species: string, t: Translate): string {
+	const key = (SPECIES_LABEL_KEYS as Record<string, MessageKey | undefined>)[species];
+	return key ? t(key) : species;
+}
 
 const LIMITS = { name: 60, breed: 60, notes: 500 };
 
@@ -36,9 +56,11 @@ function isValidDate(value: string): boolean {
 }
 
 // "today" is a parameter so that tests do not depend on the real date.
+// "t" decides the language of the error messages (Hungarian by default).
 export function parsePetForm(
 	data: FormData,
-	today = new Date().toISOString().slice(0, 10)
+	today = new Date().toISOString().slice(0, 10),
+	t: Translate = getT('hu')
 ): PetFormResult {
 	const text = (key: string) => data.get(key)?.toString().trim() ?? '';
 	const values: Record<PetField, string> = {
@@ -51,29 +73,29 @@ export function parsePetForm(
 	const errors: Partial<Record<PetField, string>> = {};
 
 	if (!values.name) {
-		errors.name = 'A név megadása kötelező.';
+		errors.name = t('pet.error.nameRequired');
 	} else if (values.name.length > LIMITS.name) {
-		errors.name = `A név legfeljebb ${LIMITS.name} karakter lehet.`;
+		errors.name = t('pet.error.nameTooLong', { max: LIMITS.name });
 	}
 
 	if (!(SPECIES as readonly string[]).includes(values.species)) {
-		errors.species = 'Válassz egy fajt a listából.';
+		errors.species = t('pet.error.speciesInvalid');
 	}
 
 	if (values.breed.length > LIMITS.breed) {
-		errors.breed = `A fajta legfeljebb ${LIMITS.breed} karakter lehet.`;
+		errors.breed = t('pet.error.breedTooLong', { max: LIMITS.breed });
 	}
 
 	if (values.birthDate) {
 		if (!isValidDate(values.birthDate)) {
-			errors.birthDate = 'Érvénytelen dátum.';
+			errors.birthDate = t('pet.error.dateInvalid');
 		} else if (values.birthDate > today) {
-			errors.birthDate = 'A születési dátum nem lehet a jövőben.';
+			errors.birthDate = t('pet.error.dateFuture');
 		}
 	}
 
 	if (values.notes.length > LIMITS.notes) {
-		errors.notes = `A megjegyzés legfeljebb ${LIMITS.notes} karakter lehet.`;
+		errors.notes = t('pet.error.notesTooLong', { max: LIMITS.notes });
 	}
 
 	if (Object.keys(errors).length > 0) return { ok: false, errors, values };

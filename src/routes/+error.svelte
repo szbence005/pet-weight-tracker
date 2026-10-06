@@ -1,17 +1,19 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { useT } from '#lib/i18n/context.ts';
 
+	const t = useT();
 	const notFound = $derived(page.status === 404);
 </script>
 
 <svelte:head>
-	<title>{notFound ? 'Nem található' : 'Hiba történt'}</title>
+	<title>{notFound ? t('error.notFoundTitle') : t('error.genericTitle')}</title>
 </svelte:head>
 
 <div class="empty">
 	<h1>{page.status}</h1>
 	<p class="muted">
-		{notFound ? 'Ez az oldal nem található.' : 'Hiba történt. Próbáld újra egy kicsit később.'}
+		{notFound ? t('error.notFoundText') : t('error.genericText')}
 	</p>
-	<p><a href="/pets" role="button">Vissza a kedvencekhez</a></p>
+	<p><a href="/pets" role="button">{t('error.backToPets')}</a></p>
 </div>

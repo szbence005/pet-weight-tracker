@@ -1,27 +1,26 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { useT } from '#lib/i18n/context.ts';
 	import type { PageProps } from './$types';
 
 	let { form }: PageProps = $props();
+	const t = useT();
 </script>
 
 <svelte:head>
-	<title>Elfelejtett jelszó</title>
+	<title>{t('forgot.title')}</title>
 </svelte:head>
 
 <div class="auth">
-	<h1>Elfelejtett jelszó</h1>
+	<h1>{t('forgot.title')}</h1>
 
 	<article>
 		{#if form?.sent}
-			<p>
-				Ha ehhez a címhez tartozik fiók, elküldtük a jelszó-visszaállító linket. Nézd meg a bejövő
-				és a spam mappát is. A link egy óráig érvényes.
-			</p>
+			<p>{t('forgot.sent')}</p>
 		{:else}
 			<form method="POST" use:enhance>
 				<label>
-					E-mail cím
+					{t('forgot.email')}
 					<input
 						type="email"
 						name="email"
@@ -33,10 +32,10 @@
 				{#if form?.message}
 					<p class="error" role="alert">{form.message}</p>
 				{/if}
-				<button type="submit">Link küldése</button>
+				<button type="submit">{t('forgot.submit')}</button>
 			</form>
 		{/if}
 	</article>
 
-	<p><a href="/login">Vissza a belépéshez</a></p>
+	<p><a href="/login">{t('forgot.back')}</a></p>
 </div>

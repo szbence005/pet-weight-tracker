@@ -1,51 +1,53 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { useT } from '#lib/i18n/context.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
+	const t = useT();
 </script>
 
 <svelte:head>
-	<title>Új jelszó beállítása</title>
+	<title>{t('reset.title')}</title>
 </svelte:head>
 
 <div class="auth">
-	<h1>Új jelszó beállítása</h1>
+	<h1>{t('reset.title')}</h1>
 
 	<article>
 		{#if form?.success}
-			<p>A jelszavad megváltozott. Most már beléphetsz az új jelszóval.</p>
-			<a href="/login" role="button">Belépés</a>
+			<p>{t('reset.success')}</p>
+			<a href="/login" role="button">{t('auth.login')}</a>
 		{:else if data.invalid}
-			<p>A link érvénytelen vagy lejárt.</p>
-			<a href="/forgot-password">Új link kérése</a>
+			<p>{t('reset.invalid')}</p>
+			<a href="/forgot-password">{t('reset.newLink')}</a>
 		{:else}
 			<form method="POST" use:enhance>
 				<input type="hidden" name="token" value={data.token} />
 				<label>
-					Új jelszó
+					{t('reset.password')}
 					<input
 						type="password"
 						name="password"
 						autocomplete="new-password"
-						minlength="8"
+						minlength={data.minPasswordLength}
 						required
 					/>
 				</label>
 				<label>
-					Új jelszó még egyszer
+					{t('reset.confirm')}
 					<input
 						type="password"
 						name="confirm"
 						autocomplete="new-password"
-						minlength="8"
+						minlength={data.minPasswordLength}
 						required
 					/>
 				</label>
 				{#if form?.message}
 					<p class="error" role="alert">{form.message}</p>
 				{/if}
-				<button type="submit">Jelszó mentése</button>
+				<button type="submit">{t('reset.submit')}</button>
 			</form>
 		{/if}
 	</article>

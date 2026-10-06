@@ -101,4 +101,16 @@ export const habitatPets = pgTable(
 		index('habitat_pets_pet_idx').on(t.petId)
 	]
 );
+// Per-user settings. Only the UI language for now ('hu' or 'en').
+export const userSettings = pgTable(
+	'user_settings',
+	{
+		userId: text('user_id')
+			.primaryKey()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		locale: text('locale').notNull(),
+		updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(t) => [check('user_settings_locale_valid', sql`${t.locale} in ('hu', 'en')`)]
+);
 export * from './auth.schema';

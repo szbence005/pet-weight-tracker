@@ -1,46 +1,44 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { SPECIES } from '#lib/pet-form.ts';
+	import { SPECIES, speciesLabel } from '#lib/pet-form.ts';
+	import { ageText } from '#lib/age.ts';
+	import { formatDate } from '#lib/i18n/format.ts';
+	import { useT } from '#lib/i18n/context.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import BreedInput from '#lib/components/BreedInput.svelte';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
+	const t = useT();
 
 	const failed = $derived(form?.success === false ? form : null);
 	// The breed suggestions depend on the selected species.
 	let picked = $state<string | null>(null);
 	const currentSpecies = $derived(picked ?? failed?.values.species ?? '');
 	const today = new Date().toISOString().slice(0, 10);
-
-	// Rough age text from a YYYY-MM-DD birth date.
-	function ageText(birthDate: string): string {
-		const born = new Date(birthDate);
-		const now = new Date();
-		let months = (now.getFullYear() - born.getFullYear()) * 12 + now.getMonth() - born.getMonth();
-		if (now.getDate() < born.getDate()) months--;
-		if (months < 1) return '1 hónapnál fiatalabb';
-		if (months < 12) return `${months} hónapos`;
-		return `${Math.floor(months / 12)} éves`;
-	}
 </script>
 
 <svelte:head>
-	<title>Kedvenceim</title>
+	<title>{t('pets.title')}</title>
 </svelte:head>
 
-<h1>Kedvenceim</h1>
+<h1>{t('pets.title')}</h1>
 
 {#if data.pets.length === 0}
 	<article class="empty">
-		<p class="muted">Még nincs kedvenced. Add hozzá az elsőt az alábbi űrlappal.</p>
+		<p class="muted">{t('pets.empty')}</p>
 	</article>
 {:else}
 	<div class="card-grid">
 		{#each data.pets as pet (pet.id)}
 			<article class="pet-card">
 				{#if data.avatars[pet.id]}
-					<img class="avatar" src={data.avatars[pet.id]} alt="{pet.name} fotója" loading="lazy" />
+					<img
+						class="avatar"
+						src={data.avatars[pet.id]}
+						alt={t('pet.photoAlt', { name: pet.name })}
+						loading="lazy"
+					/>
 				{:else}
 					<div class="avatar placeholder" aria-hidden="true">
 						{pet.name.slice(0, 1).toUpperCase()}
@@ -48,10 +46,14 @@
 				{/if}
 				<h3><a href="/pets/{pet.id}">{pet.name}</a></h3>
 				<p class="muted">
-					{pet.species}{#if pet.breed}&nbsp;· {pet.breed}{/if}
+					{speciesLabel(pet.species, t)}{#if pet.breed}&nbsp;&middot; {pet.breed}{/if}
 				</p>
 				{#if pet.birthDate}
-					<small class="muted">{ageText(pet.birthDate)} · született: {pet.birthDate}</small>
+					<small class="muted"
+						>{ageText(pet.birthDate, t)} &middot; {t('pet.born', {
+							date: formatDate(pet.birthDate, data.locale)
+						})}</small
+					>
 				{/if}
 			</article>
 		{/each}
@@ -60,11 +62,11 @@
 
 <details open={data.pets.length === 0 || failed !== null}>
 	<!-- svelte-ignore a11y_no_redundant_roles -->
-	<summary role="button" class="secondary"><Icon name="plus" /> Új kedvenc hozzáadása</summary>
+	<summary role="button" class="secondary"><Icon name="plus" /> {t('pets.add')}</summary>
 
 	<form method="post" action="?/create" use:enhance>
 		<label>
-			Név
+			{t('pet.name')}
 			<input
 				name="name"
 				maxlength="60"
@@ -76,23 +78,25 @@
 		</label>
 
 		<label>
-			Faj
+			{t('pet.species')}
 			<select
 				name="species"
 				aria-invalid={failed?.errors.species ? 'true' : undefined}
 				onchange={(event) => (picked = event.currentTarget.value)}
 				required
 			>
-				<option value="" disabled selected={!failed?.values.species}>Válassz…</option>
+				<option value="" disabled selected={!failed?.values.species}>{t('pet.choose')}</option>
 				{#each SPECIES as species (species)}
-					<option value={species} selected={failed?.values.species === species}>{species}</option>
+					<option value={species} selected={failed?.values.species === species}
+						>{speciesLabel(species, t)}</option
+					>
 				{/each}
 			</select>
 			{#if failed?.errors.species}<small class="error">{failed.errors.species}</small>{/if}
 		</label>
 
 		<label>
-			Fajta (nem kötelező)
+			{t('pet.breedOptional')}
 			<BreedInput
 				species={currentSpecies}
 				value={failed?.values.breed ?? ''}
@@ -102,7 +106,7 @@
 		</label>
 
 		<label>
-			Születési dátum (nem kötelező)
+			{t('pet.birthDateOptional')}
 			<input
 				type="date"
 				name="birthDate"
@@ -114,7 +118,7 @@
 		</label>
 
 		<label>
-			Megjegyzés (nem kötelező)
+			{t('pet.notesOptional')}
 			<textarea
 				name="notes"
 				maxlength="500"
@@ -125,7 +129,7 @@
 			{#if failed?.errors.notes}<small class="error">{failed.errors.notes}</small>{/if}
 		</label>
 
-		<button type="submit">Mentés</button>
+		<button type="submit">{t('pet.save')}</button>
 	</form>
 </details>
 
