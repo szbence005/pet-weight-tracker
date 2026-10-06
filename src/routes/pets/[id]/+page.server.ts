@@ -4,7 +4,13 @@ import { getOwnedPet, updateOwnedPet } from '#lib/server/pets.ts';
 import { addWeight, deleteWeight, listWeights, updateWeight } from '#lib/server/weights.ts';
 import { parsePetForm } from '#lib/pet-form.ts';
 import { parseWeightForm } from '#lib/weight-form.ts';
-import { createPhoto, deletePetWithPhotos, deletePhoto, listPhotos } from '#lib/server/photos.ts';
+import {
+	createPhoto,
+	deletePetWithPhotos,
+	deletePhoto,
+	listPhotos,
+	setAvatar
+} from '#lib/server/photos.ts';
 import { imageHost } from '#lib/server/imagekit.ts';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -101,6 +107,16 @@ export const actions: Actions = {
 			});
 		}
 		return { photoSaved: true as const };
+	},
+
+	photoSetAvatar: async ({ request, locals, params }) => {
+		const user = requireUser(locals);
+		const photoId = (await request.formData()).get('photoId');
+		if (typeof photoId !== 'string') error(400, 'Hiányzó azonosító.');
+
+		const done = await setAvatar(user.id, params.id, photoId);
+		if (!done) error(404, 'Nem található ilyen fotó.');
+		return { avatarSet: true as const };
 	},
 
 	photoDelete: async ({ request, locals, params }) => {

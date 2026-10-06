@@ -1,12 +1,16 @@
 import { fail } from '@sveltejs/kit';
 import { requireUser } from '#lib/server/auth-guard.ts';
 import { createPet, listPets } from '#lib/server/pets.ts';
+import { listAvatarThumbs } from '#lib/server/photos.ts';
+import { imageHost } from '#lib/server/imagekit.ts';
 import { parsePetForm } from '#lib/pet-form.ts';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const user = requireUser(locals);
-	return { pets: await listPets(user.id) };
+	const pets = await listPets(user.id);
+	const avatars = await listAvatarThumbs(user.id, imageHost);
+	return { pets, avatars };
 };
 
 export const actions: Actions = {

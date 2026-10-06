@@ -21,6 +21,9 @@
 	<div class="grid">
 		{#each data.pets as pet (pet.id)}
 			<article>
+				{#if data.avatars[pet.id]}
+					<img class="avatar" src={data.avatars[pet.id]} alt="{pet.name} fotója" loading="lazy" />
+				{/if}
 				<h3><a href="/pets/{pet.id}">{pet.name}</a></h3>
 				<p>
 					{pet.species}{#if pet.breed}&nbsp;· {pet.breed}{/if}
@@ -101,6 +104,13 @@
 </details>
 
 <style>
+	.avatar {
+		width: 4rem;
+		height: 4rem;
+		object-fit: cover;
+		border-radius: 50%;
+	}
+
 	.error {
 		color: var(--pico-del-color);
 	}

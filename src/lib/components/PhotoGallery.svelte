@@ -8,6 +8,7 @@
 		url: string;
 		thumbUrl: string;
 		caption: string | null;
+		isAvatar: boolean;
 	};
 
 	let { petId, photos }: { petId: string; photos: Photo[] } = $props();
@@ -115,6 +116,14 @@
 					</a>
 					{#if photo.caption}
 						<small>{photo.caption}</small>
+					{/if}
+					{#if photo.isAvatar}
+						<small><mark>Avatar</mark></small>
+					{:else}
+						<form method="POST" action="?/photoSetAvatar" use:enhance>
+							<input type="hidden" name="photoId" value={photo.id} />
+							<button type="submit" class="outline">Avatar legyen</button>
+						</form>
 					{/if}
 					<form method="POST" action="?/photoDelete" use:enhance={confirmDelete}>
 						<input type="hidden" name="photoId" value={photo.id} />

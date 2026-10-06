@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.ts';
-import { photos } from '#lib/server/db/schema.ts';
+import { pets, photos } from '#lib/server/db/schema.ts';
 import { deleteOwnedPet, getOwnedPet } from './pets.ts';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -154,4 +154,40 @@ export async function deletePetWithPhotos(
 		if (result.status === 'rejected') console.error('ImageKit delete failed', result.reason);
 	}
 	return true;
+}
+
+// Makes one photo the avatar of its pet; any earlier avatar is switched off.
+// Returns false if the pet is not the user's or the photo is not the pet's.
+export async function setAvatar(userId: string, petId: string, photoId: string): Promise<boolean> {
+	if (!UUID_RE.test(photoId)) return false;
+	const pet = await getOwnedPet(userId, petId);
+	if (!pet) return false;
+
+	return db.transaction(async (tx) => {
+		const [photo] = await tx
+			.select({ id: photos.id })
+			.from(photos)
+			.where(and(eq(photos.id, photoId), eq(photos.petId, pet.id)));
+		if (!photo) return false;
+
+		await tx
+			.update(photos)
+			.set({ isAvatar: false })
+			.where(and(eq(photos.petId, pet.id), eq(photos.isAvatar, true)));
+		await tx.update(photos).set({ isAvatar: true }).where(eq(photos.id, photo.id));
+		return true;
+	});
+}
+
+// One signed thumbnail URL per pet that has an avatar, only for the user's own pets.
+export async function listAvatarThumbs(userId: string, host: ImageHost) {
+	const rows = await db
+		.select({ petId: photos.petId, filePath: photos.filePath })
+		.from(photos)
+		.innerJoin(pets, eq(pets.id, photos.petId))
+		.where(and(eq(pets.ownerId, userId), eq(photos.isAvatar, true)));
+
+	const thumbs: Record<string, string> = {};
+	for (const row of rows) thumbs[row.petId] = host.signedUrl(row.filePath, { width: 200 });
+	return thumbs;
 }

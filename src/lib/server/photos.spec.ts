@@ -6,8 +6,11 @@ import { createPet, getOwnedPet } from './pets.ts';
 import {
 	MAX_PHOTO_BYTES,
 	createPhoto,
-	deletePetWithPhotos, deletePhoto,
+	deletePetWithPhotos,
+	deletePhoto,
 	listPhotos,
+	setAvatar,
+	listAvatarThumbs,
 	photoFolder,
 	type HostedFile,
 	type ImageHost
@@ -264,34 +267,100 @@ describe('photos: list and delete', () => {
 });
 
 describe('photos: deletePetWithPhotos', () => {
-  it('deletes the pet and all its files from ImageKit', async () => {
-    const petId = await newPet(userAId);
-    const first = await addPhoto(userAId, petId);
-    const second = await addPhoto(userAId, petId);
-    const { host, deleted } = fakeHost();
+	it('deletes the pet and all its files from ImageKit', async () => {
+		const petId = await newPet(userAId);
+		const first = await addPhoto(userAId, petId);
+		const second = await addPhoto(userAId, petId);
+		const { host, deleted } = fakeHost();
 
-    expect(await deletePetWithPhotos(userAId, petId, host)).toBe(true);
-    expect([...deleted].sort()).toEqual([first.imagekitFileId, second.imagekitFileId].sort());
-    expect(await getOwnedPet(userAId, petId)).toBeUndefined();
-  });
+		expect(await deletePetWithPhotos(userAId, petId, host)).toBe(true);
+		expect([...deleted].sort()).toEqual([first.imagekitFileId, second.imagekitFileId].sort());
+		expect(await getOwnedPet(userAId, petId)).toBeUndefined();
+	});
 
-  it("another user cannot delete somebody else's pet or its files", async () => {
-    const petId = await newPet(userAId);
-    await addPhoto(userAId, petId);
-    const { host, deleted } = fakeHost();
+	it("another user cannot delete somebody else's pet or its files", async () => {
+		const petId = await newPet(userAId);
+		await addPhoto(userAId, petId);
+		const { host, deleted } = fakeHost();
 
-    expect(await deletePetWithPhotos(userBId, petId, host)).toBe(false);
-    expect(deleted).toEqual([]);
-    expect(await getOwnedPet(userAId, petId)).toBeDefined();
-    expect((await listPhotos(userAId, petId, host))?.length).toBe(1);
-  });
+		expect(await deletePetWithPhotos(userBId, petId, host)).toBe(false);
+		expect(deleted).toEqual([]);
+		expect(await getOwnedPet(userAId, petId)).toBeDefined();
+		expect((await listPhotos(userAId, petId, host))?.length).toBe(1);
+	});
 
-  it('still deletes the pet when deleting from ImageKit fails', async () => {
-    const petId = await newPet(userAId);
-    await addPhoto(userAId, petId);
-    const { host } = fakeHost([], { failDelete: true });
+	it('still deletes the pet when deleting from ImageKit fails', async () => {
+		const petId = await newPet(userAId);
+		await addPhoto(userAId, petId);
+		const { host } = fakeHost([], { failDelete: true });
 
-    expect(await deletePetWithPhotos(userAId, petId, host)).toBe(true);
-    expect(await getOwnedPet(userAId, petId)).toBeUndefined();
-  });
+		expect(await deletePetWithPhotos(userAId, petId, host)).toBe(true);
+		expect(await getOwnedPet(userAId, petId)).toBeUndefined();
+	});
+});
+
+describe('photos: setAvatar', () => {
+	it('sets the avatar and moves it when another photo is chosen', async () => {
+		const petId = await newPet(userAId);
+		const first = await addPhoto(userAId, petId);
+		const second = await addPhoto(userAId, petId);
+		const { host } = fakeHost();
+		const avatarIds = async () =>
+			((await listPhotos(userAId, petId, host)) ?? []).filter((p) => p.isAvatar).map((p) => p.id);
+
+		expect(await avatarIds()).toEqual([]);
+		expect(await setAvatar(userAId, petId, first.id)).toBe(true);
+		expect(await avatarIds()).toEqual([first.id]);
+		expect(await setAvatar(userAId, petId, second.id)).toBe(true);
+		expect(await avatarIds()).toEqual([second.id]);
+	});
+
+	it("another user cannot set an avatar on somebody else's pet", async () => {
+		const petId = await newPet(userAId);
+		const photo = await addPhoto(userAId, petId);
+		const { host } = fakeHost();
+
+		expect(await setAvatar(userBId, petId, photo.id)).toBe(false);
+		expect((await listPhotos(userAId, petId, host))?.some((p) => p.isAvatar)).toBe(false);
+	});
+
+	it("a photo of another pet cannot become this pet's avatar", async () => {
+		const petId = await newPet(userAId);
+		const otherPetId = await newPet(userAId);
+		const photo = await addPhoto(userAId, otherPetId);
+		const { host } = fakeHost();
+
+		expect(await setAvatar(userAId, petId, photo.id)).toBe(false);
+		expect((await listPhotos(userAId, otherPetId, host))?.some((p) => p.isAvatar)).toBe(false);
+	});
+
+	it('rejects a malformed photo id', async () => {
+		const petId = await newPet(userAId);
+
+		expect(await setAvatar(userAId, petId, 'nope')).toBe(false);
+	});
+});
+
+describe('photos: listAvatarThumbs', () => {
+	it('returns a signed thumbnail only for pets that have an avatar', async () => {
+		const withAvatar = await newPet(userAId);
+		const withoutAvatar = await newPet(userAId);
+		const photo = await addPhoto(userAId, withAvatar);
+		await addPhoto(userAId, withoutAvatar);
+		await setAvatar(userAId, withAvatar, photo.id);
+		const { host } = fakeHost();
+
+		const thumbs = await listAvatarThumbs(userAId, host);
+		expect(thumbs[withAvatar]).toContain('?w=200');
+		expect(thumbs[withoutAvatar]).toBeUndefined();
+	});
+
+	it("does not include another user's avatars", async () => {
+		const petId = await newPet(userAId);
+		const photo = await addPhoto(userAId, petId);
+		await setAvatar(userAId, petId, photo.id);
+		const { host } = fakeHost();
+
+		expect((await listAvatarThumbs(userBId, host))[petId]).toBeUndefined();
+	});
 });

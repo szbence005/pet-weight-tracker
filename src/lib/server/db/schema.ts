@@ -1,4 +1,15 @@
-import { pgTable, uuid, text, date, integer, timestamp, index, check } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	uuid,
+	text,
+	date,
+	integer,
+	boolean,
+	timestamp,
+	index,
+	uniqueIndex,
+	check
+} from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
 
@@ -45,9 +56,15 @@ export const photos = pgTable(
 		takenAt: timestamp('taken_at', { withTimezone: true }),
 		contentType: text('content_type').notNull(),
 		sizeBytes: integer('size_bytes').notNull(),
+		isAvatar: boolean('is_avatar').notNull().default(false),
 		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 	},
-	(t) => [index('photos_pet_created_idx').on(t.petId, t.createdAt)]
+	(t) => [
+		index('photos_pet_created_idx').on(t.petId, t.createdAt),
+		uniqueIndex('photos_one_avatar_per_pet_idx')
+			.on(t.petId)
+			.where(sql`${t.isAvatar}`)
+	]
 );
 
 export * from './auth.schema';
