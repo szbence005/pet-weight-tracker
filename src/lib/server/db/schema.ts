@@ -8,7 +8,8 @@ import {
 	timestamp,
 	index,
 	uniqueIndex,
-	check
+	check,
+	primaryKey
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { user } from './auth.schema';
@@ -67,4 +68,37 @@ export const photos = pgTable(
 	]
 );
 
+// A place where pets live together (aquarium, pond, ...). Owned by one user.
+export const habitats = pgTable(
+	'habitats',
+	{
+		id: uuid('id').primaryKey().defaultRandom(),
+		ownerId: text('owner_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		name: text('name').notNull(),
+		kind: text('kind').notNull(),
+		notes: text('notes'),
+		createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(t) => [index('habitats_owner_idx').on(t.ownerId)]
+);
+
+// Which pet lives in which habitat. A pet may be in several habitats.
+export const habitatPets = pgTable(
+	'habitat_pets',
+	{
+		habitatId: uuid('habitat_id')
+			.notNull()
+			.references(() => habitats.id, { onDelete: 'cascade' }),
+		petId: uuid('pet_id')
+			.notNull()
+			.references(() => pets.id, { onDelete: 'cascade' }),
+		addedAt: timestamp('added_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(t) => [
+		primaryKey({ columns: [t.habitatId, t.petId] }),
+		index('habitat_pets_pet_idx').on(t.petId)
+	]
+);
 export * from './auth.schema';

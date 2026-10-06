@@ -353,3 +353,9 @@ details[open] > form {
 	width: auto;
 	margin: 0;
 }
+
+/* Space between the top bar menu items */
+.topbar nav {
+	display: flex;
+	gap: 1.5rem;
+}
