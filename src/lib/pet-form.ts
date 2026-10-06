@@ -1,4 +1,13 @@
-export const SPECIES = ['kutya', 'macska', 'nyúl', 'hörcsög', 'madár', 'hal', 'egyéb'] as const;
+export const SPECIES = [
+	'teknős',
+	'kutya',
+	'macska',
+	'nyúl',
+	'hörcsög',
+	'madár',
+	'hal',
+	'egyéb'
+] as const;
 
 const LIMITS = { name: 60, breed: 60, notes: 500 };
 

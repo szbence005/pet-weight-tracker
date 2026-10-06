@@ -3,16 +3,25 @@
 	import Chart from 'chart.js/auto';
 	import { SPECIES } from '#lib/pet-form.ts';
 	import PhotoGallery from '#lib/components/PhotoGallery.svelte';
+	import Icon from '#lib/components/Icon.svelte';
+	import BreedInput from '#lib/components/BreedInput.svelte';
+	import { addDays, daysBetween, forecastGrowth } from '#lib/forecast.ts';
+	import type { IconName } from '#lib/icons.ts';
 	import { formatWeight, gramsToKg, type WeightUnit } from '#lib/units.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 
 	type Tab = 'weights' | 'photos' | 'edit';
-	const tabs: { id: Tab; label: string }[] = [
-		{ id: 'weights', label: 'Súly' },
-		{ id: 'photos', label: 'Fotók' },
-		{ id: 'edit', label: 'Szerkesztés' }
+	const tabs: { id: Tab; label: string; icon: IconName }[] = [
+		{ id: 'weights', label: 'Súly', icon: 'pulse' },
+		{ id: 'photos', label: 'Fotók', icon: 'image' },
+		{ id: 'edit', label: 'Szerkesztés', icon: 'pencil' }
+	];
+	const horizons = [
+		{ days: 90, label: '3 hónap' },
+		{ days: 180, label: '6 hónap' },
+		{ days: 365, label: '1 év' }
 	];
 
 	const failed = $derived(form?.success === false ? form : null);
@@ -20,11 +29,16 @@
 	const weightFailed = $derived(form?.weightFailed === true ? form : null);
 	// After a failed save show what the user typed; otherwise the stored values.
 	const values = $derived(failed?.values ?? data.pet);
+	// The breed suggestions depend on the selected species.
+	let picked = $state<string | null>(null);
+	const currentSpecies = $derived(picked ?? values.species ?? '');
 	const today = new Date().toISOString().slice(0, 10);
 
 	let tab = $state<Tab>('weights');
 	let unit = $state<WeightUnit>('kg');
 	let canvas = $state<HTMLCanvasElement>();
+	let showForecast = $state(true);
+	let horizon = $state(180);
 
 	// A failed form submit switches to the tab that holds that form.
 	$effect(() => {
@@ -34,37 +48,87 @@
 
 	// Newest first in the table; the chart uses the oldest-first order from the server.
 	const newestFirst = $derived([...data.weights].reverse());
+	const forecast = $derived(forecastGrowth(data.weights, horizon));
+	const horizonLabel = $derived(horizons.find((h) => h.days === horizon)?.label ?? '');
 
 	// Chart.js only runs in the browser ($effect does not run on the server).
+	// x axis = days since the first measurement (linear), ticks are shown as dates, so the
+	// forecast points are spaced correctly in time.
 	$effect(() => {
-		if (!canvas) return;
+		if (!canvas || data.weights.length === 0) return;
+		const origin = data.weights[0].measuredAt;
 		const css = getComputedStyle(document.documentElement);
-		const line = css.getPropertyValue('--pico-primary').trim();
-		const muted = css.getPropertyValue('--pico-muted-color').trim();
-		const grid = css.getPropertyValue('--pico-muted-border-color').trim();
+		const color = (name: string) => css.getPropertyValue(name).trim();
+		const line = color('--pico-primary');
+		const muted = color('--pico-muted-color');
+		const grid = color('--pico-muted-border-color');
+		const toValue = (grams: number) => (unit === 'kg' ? gramsToKg(grams) : grams);
+
+		const last = data.weights[data.weights.length - 1];
+		const lastPoint = { x: daysBetween(origin, last.measuredAt), y: toValue(last.weightGrams) };
+
+		const dashed = (
+			label: string,
+			key: 'realistic' | 'optimistic' | 'pessimistic',
+			c: string,
+			points: NonNullable<typeof forecast>['points']
+		) => ({
+			label,
+			data: [
+				lastPoint,
+				...points.map((p) => ({ x: daysBetween(origin, p.date), y: toValue(p[key]) }))
+			],
+			borderColor: c,
+			backgroundColor: c,
+			borderDash: [6, 4],
+			borderWidth: 2,
+			pointRadius: 0,
+			tension: 0
+		});
+
+		const datasets = [
+			{
+				label: 'Mért',
+				data: data.weights.map((w) => ({
+					x: daysBetween(origin, w.measuredAt),
+					y: toValue(w.weightGrams)
+				})),
+				tension: 0.2,
+				borderColor: line,
+				backgroundColor: line,
+				pointRadius: 3
+			},
+			...(showForecast && forecast
+				? [
+						dashed('Optimista', 'optimistic', color('--gh-success'), forecast.points),
+						dashed('Reális', 'realistic', muted, forecast.points),
+						dashed('Pesszimista', 'pessimistic', color('--gh-danger'), forecast.points)
+					]
+				: [])
+		];
+
 		const chart = new Chart(canvas, {
 			type: 'line',
-			data: {
-				labels: data.weights.map((w) => w.measuredAt),
-				datasets: [
-					{
-						label: unit,
-						data: data.weights.map((w) =>
-							unit === 'kg' ? gramsToKg(w.weightGrams) : w.weightGrams
-						),
-						tension: 0.2,
-						borderColor: line,
-						backgroundColor: line,
-						pointRadius: 3
-					}
-				]
-			},
+			data: { datasets },
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
-				plugins: { legend: { display: false } },
+				plugins: {
+					legend: { display: datasets.length > 1, labels: { color: muted } },
+					tooltip: {
+						callbacks: { title: (items) => addDays(origin, items[0]?.parsed.x ?? 0) }
+					}
+				},
 				scales: {
-					x: { ticks: { color: muted }, grid: { color: grid } },
+					x: {
+						type: 'linear',
+						ticks: {
+							color: muted,
+							maxTicksLimit: 6,
+							callback: (value) => addDays(origin, Number(value))
+						},
+						grid: { color: grid }
+					},
 					y: {
 						ticks: { color: muted },
 						grid: { color: grid },
@@ -96,14 +160,14 @@
 			id="tab-{t.id}"
 			aria-selected={tab === t.id}
 			aria-controls="panel"
-			onclick={() => (tab = t.id)}>{t.label}</button
+			onclick={() => (tab = t.id)}><Icon name={t.icon} /> {t.label}</button
 		>
 	{/each}
 </div>
 
 <div role="tabpanel" id="panel" aria-labelledby="tab-{tab}">
 	{#if tab === 'weights'}
-		<div role="group">
+		<div role="group" class="unit-toggle">
 			<button type="button" class:outline={unit !== 'kg'} onclick={() => (unit = 'kg')}>kg</button>
 			<button type="button" class:outline={unit !== 'g'} onclick={() => (unit = 'g')}>g</button>
 		</div>
@@ -113,7 +177,40 @@
 				<p class="muted">Még nincs mérés. Add hozzá az elsőt az alábbi űrlappal.</p>
 			</article>
 		{:else}
+			<div class="chart-controls">
+				<label>
+					<input type="checkbox" bind:checked={showForecast} />
+					Előrejelzés
+				</label>
+				{#if showForecast}
+					<select bind:value={horizon} aria-label="Előrejelzés időtávja">
+						{#each horizons as h (h.days)}
+							<option value={h.days}>{h.label}</option>
+						{/each}
+					</select>
+				{/if}
+			</div>
+
 			<div class="chart-box"><canvas bind:this={canvas}></canvas></div>
+
+			{#if showForecast}
+				{#if forecast}
+					{@const end = forecast.points[forecast.points.length - 1]}
+					<p class="muted">
+						<small>
+							{horizonLabel} múlva ({end.date}): reális {formatWeight(end.realistic, unit)},
+							optimista {formatWeight(end.optimistic, unit)}, pesszimista
+							{formatWeight(end.pessimistic, unit)}. Az utolsó legfeljebb 10 mérésre illesztett
+							egyenes alapján számolt, tájékoztató becslés: a teknősök növekedése idővel lassul,
+							ezért a hosszabb táv pontatlanabb.
+						</small>
+					</p>
+				{:else}
+					<p class="muted">
+						<small>Az előrejelzéshez legalább 3 mérés kell, legalább 2 hét különbséggel.</small>
+					</p>
+				{/if}
+			{/if}
 
 			<div class="overflow-auto">
 				<table>
@@ -135,7 +232,12 @@
 										}}
 									>
 										<input type="hidden" name="entryId" value={entry.id} />
-										<button type="submit" class="secondary outline small">Törlés</button>
+										<button
+											type="submit"
+											class="secondary outline small icon-btn"
+											aria-label="Mérés törlése"
+											title="Mérés törlése"><Icon name="trash" /></button
+										>
 									</form>
 								</td>
 							</tr>
@@ -147,7 +249,7 @@
 
 		<details open={data.weights.length === 0 || weightFailed !== null}>
 			<!-- svelte-ignore a11y_no_redundant_roles -->
-			<summary role="button" class="secondary">Új mérés hozzáadása</summary>
+			<summary role="button" class="secondary"><Icon name="plus" /> Új mérés hozzáadása</summary>
 
 			<form method="post" action="?/weightAdd" use:enhance>
 				<input type="hidden" name="unit" value={unit} />
@@ -219,7 +321,12 @@
 
 			<label>
 				Faj
-				<select name="species" aria-invalid={failed?.errors.species ? 'true' : undefined} required>
+				<select
+					name="species"
+					aria-invalid={failed?.errors.species ? 'true' : undefined}
+					onchange={(event) => (picked = event.currentTarget.value)}
+					required
+				>
 					{#each SPECIES as species (species)}
 						<option value={species} selected={values.species === species}>{species}</option>
 					{/each}
@@ -229,11 +336,10 @@
 
 			<label>
 				Fajta (nem kötelező)
-				<input
-					name="breed"
-					maxlength="60"
+				<BreedInput
+					species={currentSpecies}
 					value={values.breed ?? ''}
-					aria-invalid={failed?.errors.breed ? 'true' : undefined}
+					invalid={!!failed?.errors.breed}
 				/>
 				{#if failed?.errors.breed}<small class="error">{failed.errors.breed}</small>{/if}
 			</label>
@@ -265,7 +371,7 @@
 		</form>
 
 		<div class="danger-zone">
-			<h3>Veszélyes zóna</h3>
+			<h3><Icon name="alert" /> Veszélyes zóna</h3>
 			<p class="muted">
 				A kedvenc törlésével az összes mérése és fotója is törlődik. Ez nem vonható vissza.
 			</p>
@@ -279,8 +385,15 @@
 					}
 				}}
 			>
-				<button type="submit" class="danger outline">Kedvenc törlése</button>
+				<button type="submit" class="danger outline"><Icon name="trash" /> Kedvenc törlése</button>
 			</form>
 		</div>
 	{/if}
 </div>
+
+<style>
+	/* Pico makes button groups full width; the kg/g switch should only be as wide as needed. */
+	.unit-toggle {
+		width: auto;
+	}
+</style>

@@ -3,6 +3,7 @@
 	import '../app.css';
 	import { page } from '$app/state';
 	import favicon from '#lib/assets/favicon.svg';
+	import Icon from '#lib/components/Icon.svelte';
 	import type { LayoutProps } from './$types';
 
 	let { data, children }: LayoutProps = $props();
@@ -19,14 +20,16 @@
 		<a class="brand" href="/">Pet Weight Tracker</a>
 		{#if data.user}
 			<nav aria-label="Főmenü">
-				<a href="/pets" aria-current={onPets ? 'page' : undefined}>Kedvenceim</a>
+				<a href="/pets" aria-current={onPets ? 'page' : undefined}
+					><Icon name="heart" /> Kedvenceim</a
+				>
 			</nav>
 		{/if}
 		<div class="bar-end">
 			{#if data.user}
 				<span class="who">{data.user.name}</span>
 				<form method="post" action="/logout">
-					<button type="submit" class="topbtn">Kijelentkezés</button>
+					<button type="submit" class="topbtn"><Icon name="sign-out" /> Kijelentkezés</button>
 				</form>
 			{:else}
 				<a href="/login">Belépés</a>

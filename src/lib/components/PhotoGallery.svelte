@@ -2,6 +2,7 @@
 	import { enhance, type SubmitFunction } from '$app/forms';
 	import { upload } from '@imagekit/javascript';
 	import { resizeImage } from '#lib/image-resize.ts';
+	import Icon from '#lib/components/Icon.svelte';
 
 	type Photo = {
 		id: string;
@@ -115,7 +116,8 @@
 				<li class="tile">
 					<a href={photo.url} target="_blank" rel="noreferrer">
 						<img src={photo.thumbUrl} alt={photo.caption ?? 'A kedvenc fotója'} loading="lazy" />
-						{#if photo.isAvatar}<span class="badge">Avatar</span>{/if}
+						{#if photo.isAvatar}<span class="badge"><Icon name="star-fill" size={12} /> Avatar</span
+							>{/if}
 					</a>
 					{#if photo.caption}
 						<small class="caption">{photo.caption}</small>
@@ -124,12 +126,19 @@
 						{#if !photo.isAvatar}
 							<form method="POST" action="?/photoSetAvatar" use:enhance>
 								<input type="hidden" name="photoId" value={photo.id} />
-								<button type="submit" class="outline small">Avatar legyen</button>
+								<button type="submit" class="outline small"
+									><Icon name="star-fill" size={12} /> Avatar legyen</button
+								>
 							</form>
 						{/if}
 						<form method="POST" action="?/photoDelete" use:enhance={confirmDelete}>
 							<input type="hidden" name="photoId" value={photo.id} />
-							<button type="submit" class="outline secondary small">Törlés</button>
+							<button
+								type="submit"
+								class="outline secondary small icon-btn"
+								aria-label="Fotó törlése"
+								title="Fotó törlése"><Icon name="trash" /></button
+							>
 						</form>
 					</div>
 				</li>

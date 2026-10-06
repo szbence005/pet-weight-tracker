@@ -314,19 +314,42 @@ summary:focus-visible,
 
 /* details-button: the "add" disclosure buttons (pets list, weights) */
 details > summary[role='button'] {
-  display: inline-block;
-  width: auto;
-  margin-bottom: 0;
+	display: inline-block;
+	width: auto;
+	margin-bottom: 0;
 }
 details > summary[role='button']::after {
-  display: none;
+	display: none;
 }
 details[open] > form {
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--gh-border);
-  border-radius: 6px;
+	margin-top: 1rem;
+	padding: 1rem;
+	border: 1px solid var(--gh-border);
+	border-radius: 6px;
 }
 .card-grid {
-  margin-bottom: 1.5rem;
+	margin-bottom: 1.5rem;
+}
+
+/* icon-btn: icon-only buttons; chart-controls: forecast toggle row */
+.icon-btn {
+	padding: 0.25rem 0.45rem;
+	line-height: 0;
+}
+.chart-controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1rem;
+	margin-block: 0.75rem;
+}
+.chart-controls label {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	margin: 0;
+}
+.chart-controls select {
+	width: auto;
+	margin: 0;
 }

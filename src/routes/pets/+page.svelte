@@ -1,11 +1,16 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { SPECIES } from '#lib/pet-form.ts';
+	import Icon from '#lib/components/Icon.svelte';
+	import BreedInput from '#lib/components/BreedInput.svelte';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
 
 	const failed = $derived(form?.success === false ? form : null);
+	// The breed suggestions depend on the selected species.
+	let picked = $state<string | null>(null);
+	const currentSpecies = $derived(picked ?? failed?.values.species ?? '');
 	const today = new Date().toISOString().slice(0, 10);
 
 	// Rough age text from a YYYY-MM-DD birth date.
@@ -55,7 +60,7 @@
 
 <details open={data.pets.length === 0 || failed !== null}>
 	<!-- svelte-ignore a11y_no_redundant_roles -->
-	<summary role="button" class="secondary">Új kedvenc hozzáadása</summary>
+	<summary role="button" class="secondary"><Icon name="plus" /> Új kedvenc hozzáadása</summary>
 
 	<form method="post" action="?/create" use:enhance>
 		<label>
@@ -72,7 +77,12 @@
 
 		<label>
 			Faj
-			<select name="species" aria-invalid={failed?.errors.species ? 'true' : undefined} required>
+			<select
+				name="species"
+				aria-invalid={failed?.errors.species ? 'true' : undefined}
+				onchange={(event) => (picked = event.currentTarget.value)}
+				required
+			>
 				<option value="" disabled selected={!failed?.values.species}>Válassz…</option>
 				{#each SPECIES as species (species)}
 					<option value={species} selected={failed?.values.species === species}>{species}</option>
@@ -83,11 +93,10 @@
 
 		<label>
 			Fajta (nem kötelező)
-			<input
-				name="breed"
-				maxlength="60"
+			<BreedInput
+				species={currentSpecies}
 				value={failed?.values.breed ?? ''}
-				aria-invalid={failed?.errors.breed ? 'true' : undefined}
+				invalid={!!failed?.errors.breed}
 			/>
 			{#if failed?.errors.breed}<small class="error">{failed.errors.breed}</small>{/if}
 		</label>
