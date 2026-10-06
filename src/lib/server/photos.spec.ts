@@ -2,11 +2,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { inArray } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.ts';
 import { user } from '#lib/server/db/schema.ts';
-import { createPet } from './pets.ts';
+import { createPet, getOwnedPet } from './pets.ts';
 import {
 	MAX_PHOTO_BYTES,
 	createPhoto,
-	deletePhoto,
+	deletePetWithPhotos, deletePhoto,
 	listPhotos,
 	photoFolder,
 	type HostedFile,
@@ -261,4 +261,37 @@ describe('photos: list and delete', () => {
 		expect(await deletePhoto(userAId, petId, photo.id, host)).toBe(true);
 		expect(await listPhotos(userAId, petId, host)).toEqual([]);
 	});
+});
+
+describe('photos: deletePetWithPhotos', () => {
+  it('deletes the pet and all its files from ImageKit', async () => {
+    const petId = await newPet(userAId);
+    const first = await addPhoto(userAId, petId);
+    const second = await addPhoto(userAId, petId);
+    const { host, deleted } = fakeHost();
+
+    expect(await deletePetWithPhotos(userAId, petId, host)).toBe(true);
+    expect([...deleted].sort()).toEqual([first.imagekitFileId, second.imagekitFileId].sort());
+    expect(await getOwnedPet(userAId, petId)).toBeUndefined();
+  });
+
+  it("another user cannot delete somebody else's pet or its files", async () => {
+    const petId = await newPet(userAId);
+    await addPhoto(userAId, petId);
+    const { host, deleted } = fakeHost();
+
+    expect(await deletePetWithPhotos(userBId, petId, host)).toBe(false);
+    expect(deleted).toEqual([]);
+    expect(await getOwnedPet(userAId, petId)).toBeDefined();
+    expect((await listPhotos(userAId, petId, host))?.length).toBe(1);
+  });
+
+  it('still deletes the pet when deleting from ImageKit fails', async () => {
+    const petId = await newPet(userAId);
+    await addPhoto(userAId, petId);
+    const { host } = fakeHost([], { failDelete: true });
+
+    expect(await deletePetWithPhotos(userAId, petId, host)).toBe(true);
+    expect(await getOwnedPet(userAId, petId)).toBeUndefined();
+  });
 });

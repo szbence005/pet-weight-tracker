@@ -1,7 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '#lib/server/db/index.ts';
 import { photos } from '#lib/server/db/schema.ts';
-import { getOwnedPet } from './pets.ts';
+import { deleteOwnedPet, getOwnedPet } from './pets.ts';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const FILE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
@@ -126,6 +126,32 @@ export async function deletePhoto(
 		await host.deleteFile(deleted[0].fileId);
 	} catch (error) {
 		console.error('ImageKit delete failed', error);
+	}
+	return true;
+}
+
+// Deletes a pet; the database cascade removes its photo rows. The ImageKit
+// files are deleted afterwards, and a failure there only leaves orphan files.
+export async function deletePetWithPhotos(
+	userId: string,
+	petId: string,
+	host: ImageHost
+): Promise<boolean> {
+	const pet = await getOwnedPet(userId, petId);
+	if (!pet) return false;
+
+	// Collect the file ids first: the cascade removes the rows with the pet.
+	const files = await db
+		.select({ fileId: photos.imagekitFileId })
+		.from(photos)
+		.where(eq(photos.petId, pet.id));
+
+	const deleted = await deleteOwnedPet(userId, pet.id);
+	if (!deleted) return false;
+
+	const results = await Promise.allSettled(files.map((file) => host.deleteFile(file.fileId)));
+	for (const result of results) {
+		if (result.status === 'rejected') console.error('ImageKit delete failed', result.reason);
 	}
 	return true;
 }
