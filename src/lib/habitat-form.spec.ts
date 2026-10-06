@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parseHabitatForm } from './habitat-form.ts';
+import { kindLabel, parseHabitatForm } from './habitat-form.ts';
+import { getT } from './i18n/index.ts';
 
 function form(entries: Record<string, string>) {
 	const data = new FormData();
@@ -35,5 +36,19 @@ describe('parseHabitatForm', () => {
 			expect(r.errors.notes).toBeTruthy();
 			expect(r.values.name).toHaveLength(61);
 		}
+	});
+});
+
+describe('habitat translations', () => {
+	it('uses the given language for the error messages', () => {
+		const hu = parseHabitatForm(form({ name: ' ', kind: 'pond', notes: '' }));
+		const en = parseHabitatForm(form({ name: ' ', kind: 'pond', notes: '' }), getT('en'));
+		expect(!hu.ok && hu.errors.name).toBe(getT('hu')('pet.error.nameRequired'));
+		expect(!en.ok && en.errors.name).toBe('Name is required.');
+	});
+
+	it('translates a kind label and keeps an unknown kind as it is', () => {
+		expect(kindLabel('pond', getT('en'))).toBe('Pond');
+		expect(kindLabel('castle', getT('en'))).toBe('castle');
 	});
 });

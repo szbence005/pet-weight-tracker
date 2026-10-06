@@ -1,13 +1,14 @@
 // Validation of the habitat form. Pure code, no database. Kinds are stored as English keys;
-// the Hungarian labels belong to the UI.
+// the labels and error messages come from the i18n dictionary.
+import { getT, type MessageKey, type Translate } from './i18n/index.ts';
 
 export const HABITAT_KINDS = [
-	'aquarium',
-	'terrarium',
-	'pond',
-	'garden',
-	'enclosure',
-	'other'
+    'aquarium',
+    'terrarium',
+    'pond',
+    'garden',
+    'enclosure',
+    'other'
 ] as const;
 export type HabitatKind = (typeof HABITAT_KINDS)[number];
 
@@ -16,44 +17,56 @@ export type HabitatField = 'name' | 'kind' | 'notes';
 export type HabitatFormValues = { name: string; kind: string; notes: string };
 
 export type HabitatFormResult =
-	| { ok: true; value: HabitatInput }
-	| { ok: false; errors: Partial<Record<HabitatField, string>>; values: HabitatFormValues };
+    | { ok: true; value: HabitatInput }
+    | { ok: false; errors: Partial<Record<HabitatField, string>>; values: HabitatFormValues };
 
-export function parseHabitatForm(formData: FormData): HabitatFormResult {
-	const read = (key: string) => {
-		const v = formData.get(key);
-		return typeof v === 'string' ? v.trim() : '';
-	};
-	const values: HabitatFormValues = {
-		name: read('name'),
-		kind: read('kind'),
-		notes: read('notes')
-	};
-	const errors: Partial<Record<HabitatField, string>> = {};
+const LIMITS = { name: 60, notes: 500 };
 
-	if (values.name === '') errors.name = 'Add meg a nevet.';
-	else if (values.name.length > 60) errors.name = 'A n\u00e9v legfeljebb 60 karakter lehet.';
+// "t" decides the language of the error messages (Hungarian by default).
+export function parseHabitatForm(
+    formData: FormData,
+    t: Translate = getT('hu')
+): HabitatFormResult {
+    const read = (key: string) => {
+        const v = formData.get(key);
+        return typeof v === 'string' ? v.trim() : '';
+    };
+    const values: HabitatFormValues = {
+        name: read('name'),
+        kind: read('kind'),
+        notes: read('notes')
+    };
+    const errors: Partial<Record<HabitatField, string>> = {};
 
-	const kind = HABITAT_KINDS.find((k) => k === values.kind);
-	if (!kind) errors.kind = 'V\u00e1lassz t\u00edpust.';
+    if (values.name === '') {
+        errors.name = t('pet.error.nameRequired');
+    } else if (values.name.length > LIMITS.name) {
+        errors.name = t('pet.error.nameTooLong', { max: LIMITS.name });
+    }
 
-	if (values.notes.length > 500) {
-		errors.notes = 'A megjegyz\u00e9s legfeljebb 500 karakter lehet.';
-	}
+    const kind = HABITAT_KINDS.find((k) => k === values.kind);
+    if (!kind) errors.kind = t('habitat.error.kindRequired');
 
-	if (Object.keys(errors).length > 0 || !kind) return { ok: false, errors, values };
-	return { ok: true, value: { name: values.name, kind, notes: values.notes || null } };
+    if (values.notes.length > LIMITS.notes) {
+        errors.notes = t('pet.error.notesTooLong', { max: LIMITS.notes });
+    }
+
+    if (Object.keys(errors).length > 0 || !kind) return { ok: false, errors, values };
+    return { ok: true, value: { name: values.name, kind, notes: values.notes || null } };
 }
 
-export const HABITAT_KIND_LABELS: Record<HabitatKind, string> = {
-	aquarium: 'Akv\u00e1rium',
-	terrarium: 'Terr\u00e1rium',
-	pond: 'T\u00f3',
-	garden: 'Kert',
-	enclosure: 'Kifut\u00f3',
-	other: 'Egy\u00e9b'
+// The stored kind stays an English key; this only decides how it is shown.
+const KIND_LABEL_KEYS: Record<HabitatKind, MessageKey> = {
+    aquarium: 'habitat.kind.aquarium',
+    terrarium: 'habitat.kind.terrarium',
+    pond: 'habitat.kind.pond',
+    garden: 'habitat.kind.garden',
+    enclosure: 'habitat.kind.enclosure',
+    other: 'habitat.kind.other'
 };
 
-export function kindLabel(kind: string): string {
-	return (HABITAT_KIND_LABELS as Record<string, string>)[kind] ?? kind;
+/** The display name of a stored kind; unknown values are shown as they are. */
+export function kindLabel(kind: string, t: Translate): string {
+    const key = (KIND_LABEL_KEYS as Record<string, MessageKey | undefined>)[kind];
+    return key ? t(key) : kind;
 }

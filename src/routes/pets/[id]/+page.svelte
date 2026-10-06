@@ -1,27 +1,31 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import Chart from 'chart.js/auto';
-	import { SPECIES } from '#lib/pet-form.ts';
+	import { SPECIES, speciesLabel } from '#lib/pet-form.ts';
 	import PhotoGallery from '#lib/components/PhotoGallery.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import BreedInput from '#lib/components/BreedInput.svelte';
 	import { addDays, daysBetween, forecastGrowth } from '#lib/forecast.ts';
+	import { useT } from '#lib/i18n/context.ts';
+	import { formatDate } from '#lib/i18n/format.ts';
+	import type { MessageKey } from '#lib/i18n/index.ts';
 	import type { IconName } from '#lib/icons.ts';
 	import { formatWeight, gramsToKg, type WeightUnit } from '#lib/units.ts';
 	import type { PageProps } from './$types';
 
 	let { data, form }: PageProps = $props();
+	const t = useT();
 
 	type Tab = 'weights' | 'photos' | 'edit';
-	const tabs: { id: Tab; label: string; icon: IconName }[] = [
-		{ id: 'weights', label: 'Súly', icon: 'pulse' },
-		{ id: 'photos', label: 'Fotók', icon: 'image' },
-		{ id: 'edit', label: 'Szerkesztés', icon: 'pencil' }
+	const tabs: { id: Tab; key: MessageKey; icon: IconName }[] = [
+		{ id: 'weights', key: 'tab.weights', icon: 'pulse' },
+		{ id: 'photos', key: 'tab.photos', icon: 'image' },
+		{ id: 'edit', key: 'tab.edit', icon: 'pencil' }
 	];
-	const horizons = [
-		{ days: 90, label: '3 hónap' },
-		{ days: 180, label: '6 hónap' },
-		{ days: 365, label: '1 év' }
+	const horizons: { days: number; key: MessageKey }[] = [
+		{ days: 90, key: 'forecast.horizon.90' },
+		{ days: 180, key: 'forecast.horizon.180' },
+		{ days: 365, key: 'forecast.horizon.365' }
 	];
 
 	const failed = $derived(form?.success === false ? form : null);
@@ -49,7 +53,9 @@
 	// Newest first in the table; the chart uses the oldest-first order from the server.
 	const newestFirst = $derived([...data.weights].reverse());
 	const forecast = $derived(forecastGrowth(data.weights, horizon));
-	const horizonLabel = $derived(horizons.find((h) => h.days === horizon)?.label ?? '');
+	const horizonLabel = $derived(
+		t(horizons.find((h) => h.days === horizon)?.key ?? 'forecast.horizon.180')
+	);
 
 	// Chart.js only runs in the browser ($effect does not run on the server).
 	// x axis = days since the first measurement (linear), ticks are shown as dates, so the
@@ -63,6 +69,7 @@
 		const muted = color('--pico-muted-color');
 		const grid = color('--pico-muted-border-color');
 		const toValue = (grams: number) => (unit === 'kg' ? gramsToKg(grams) : grams);
+		const dayLabel = (day: number) => formatDate(addDays(origin, day), data.locale);
 
 		const last = data.weights[data.weights.length - 1];
 		const lastPoint = { x: daysBetween(origin, last.measuredAt), y: toValue(last.weightGrams) };
@@ -88,7 +95,7 @@
 
 		const datasets = [
 			{
-				label: 'Mért',
+				label: t('chart.measured'),
 				data: data.weights.map((w) => ({
 					x: daysBetween(origin, w.measuredAt),
 					y: toValue(w.weightGrams)
@@ -100,9 +107,9 @@
 			},
 			...(showForecast && forecast
 				? [
-						dashed('Optimista', 'optimistic', color('--gh-success'), forecast.points),
-						dashed('Reális', 'realistic', muted, forecast.points),
-						dashed('Pesszimista', 'pessimistic', color('--gh-danger'), forecast.points)
+						dashed(t('chart.optimistic'), 'optimistic', color('--gh-success'), forecast.points),
+						dashed(t('chart.realistic'), 'realistic', muted, forecast.points),
+						dashed(t('chart.pessimistic'), 'pessimistic', color('--gh-danger'), forecast.points)
 					]
 				: [])
 		];
@@ -116,7 +123,7 @@
 				plugins: {
 					legend: { display: datasets.length > 1, labels: { color: muted } },
 					tooltip: {
-						callbacks: { title: (items) => addDays(origin, items[0]?.parsed.x ?? 0) }
+						callbacks: { title: (items) => dayLabel(items[0]?.parsed.x ?? 0) }
 					}
 				},
 				scales: {
@@ -125,7 +132,7 @@
 						ticks: {
 							color: muted,
 							maxTicksLimit: 6,
-							callback: (value) => addDays(origin, Number(value))
+							callback: (value) => dayLabel(Number(value))
 						},
 						grid: { color: grid }
 					},
@@ -145,22 +152,24 @@
 	<title>{data.pet.name}</title>
 </svelte:head>
 
-<p><a href="/pets">&larr; Vissza a kedvencekhez</a></p>
+<p><a href="/pets">&larr; {t('pet.back')}</a></p>
 
 <div class="pet-head">
 	<h1>{data.pet.name}</h1>
-	<p class="muted">{data.pet.species}{data.pet.breed ? ` · ${data.pet.breed}` : ''}</p>
+	<p class="muted">
+		{speciesLabel(data.pet.species, t)}{data.pet.breed ? ` \u00b7 ${data.pet.breed}` : ''}
+	</p>
 </div>
 
-<div class="tabs" role="tablist" aria-label="Kedvenc adatai">
-	{#each tabs as t (t.id)}
+<div class="tabs" role="tablist" aria-label={t('pet.tabsLabel')}>
+	{#each tabs as tabItem (tabItem.id)}
 		<button
 			type="button"
 			role="tab"
-			id="tab-{t.id}"
-			aria-selected={tab === t.id}
+			id="tab-{tabItem.id}"
+			aria-selected={tab === tabItem.id}
 			aria-controls="panel"
-			onclick={() => (tab = t.id)}><Icon name={t.icon} /> {t.label}</button
+			onclick={() => (tab = tabItem.id)}><Icon name={tabItem.icon} /> {t(tabItem.key)}</button
 		>
 	{/each}
 </div>
@@ -174,18 +183,18 @@
 
 		{#if data.weights.length === 0}
 			<article class="empty">
-				<p class="muted">Még nincs mérés. Add hozzá az elsőt az alábbi űrlappal.</p>
+				<p class="muted">{t('weight.empty')}</p>
 			</article>
 		{:else}
 			<div class="chart-controls">
 				<label>
 					<input type="checkbox" bind:checked={showForecast} />
-					Előrejelzés
+					{t('forecast.toggle')}
 				</label>
 				{#if showForecast}
-					<select bind:value={horizon} aria-label="Előrejelzés időtávja">
+					<select bind:value={horizon} aria-label={t('forecast.horizonLabel')}>
 						{#each horizons as h (h.days)}
-							<option value={h.days}>{h.label}</option>
+							<option value={h.days}>{t(h.key)}</option>
 						{/each}
 					</select>
 				{/if}
@@ -198,16 +207,19 @@
 					{@const end = forecast.points[forecast.points.length - 1]}
 					<p class="muted">
 						<small>
-							{horizonLabel} múlva ({end.date}): reális {formatWeight(end.realistic, unit)},
-							optimista {formatWeight(end.optimistic, unit)}, pesszimista
-							{formatWeight(end.pessimistic, unit)}. Az utolsó legfeljebb 10 mérésre illesztett
-							egyenes alapján számolt, tájékoztató becslés: a teknősök növekedése idővel lassul,
-							ezért a hosszabb táv pontatlanabb.
+							{t('forecast.summary', {
+								horizon: horizonLabel,
+								date: formatDate(end.date, data.locale),
+								realistic: formatWeight(end.realistic, unit, data.locale),
+								optimistic: formatWeight(end.optimistic, unit, data.locale),
+								pessimistic: formatWeight(end.pessimistic, unit, data.locale)
+							})}
+							{t('forecast.disclaimer')}
 						</small>
 					</p>
 				{:else}
 					<p class="muted">
-						<small>Az előrejelzéshez legalább 3 mérés kell, legalább 2 hét különbséggel.</small>
+						<small>{t('forecast.tooFew')}</small>
 					</p>
 				{/if}
 			{/if}
@@ -215,28 +227,33 @@
 			<div class="overflow-auto">
 				<table>
 					<thead>
-						<tr><th>Dátum</th><th>Súly</th><th>Megjegyzés</th><th></th></tr>
+						<tr>
+							<th>{t('weight.col.date')}</th>
+							<th>{t('weight.col.weight')}</th>
+							<th>{t('weight.col.note')}</th>
+							<th></th>
+						</tr>
 					</thead>
 					<tbody>
 						{#each newestFirst as entry (entry.id)}
 							<tr>
-								<td>{entry.measuredAt}</td>
-								<td>{formatWeight(entry.weightGrams, unit)}</td>
+								<td>{formatDate(entry.measuredAt, data.locale)}</td>
+								<td>{formatWeight(entry.weightGrams, unit, data.locale)}</td>
 								<td>{entry.note ?? ''}</td>
 								<td>
 									<form
 										method="post"
 										action="?/weightDelete"
 										use:enhance={({ cancel }) => {
-											if (!confirm('Biztosan törlöd ezt a mérést?')) cancel();
+											if (!confirm(t('weight.deleteConfirm'))) cancel();
 										}}
 									>
 										<input type="hidden" name="entryId" value={entry.id} />
 										<button
 											type="submit"
 											class="secondary outline small icon-btn"
-											aria-label="Mérés törlése"
-											title="Mérés törlése"><Icon name="trash" /></button
+											aria-label={t('weight.delete')}
+											title={t('weight.delete')}><Icon name="trash" /></button
 										>
 									</form>
 								</td>
@@ -249,13 +266,13 @@
 
 		<details open={data.weights.length === 0 || weightFailed !== null}>
 			<!-- svelte-ignore a11y_no_redundant_roles -->
-			<summary role="button" class="secondary"><Icon name="plus" /> Új mérés hozzáadása</summary>
+			<summary role="button" class="secondary"><Icon name="plus" /> {t('weight.add')}</summary>
 
 			<form method="post" action="?/weightAdd" use:enhance>
 				<input type="hidden" name="unit" value={unit} />
 
 				<label>
-					Súly ({unit})
+					{t('weight.field', { unit })}
 					<input
 						name="weight"
 						inputmode="decimal"
@@ -269,7 +286,7 @@
 				</label>
 
 				<label>
-					Dátum
+					{t('weight.date')}
 					<input
 						type="date"
 						name="measuredAt"
@@ -284,7 +301,7 @@
 				</label>
 
 				<label>
-					Megjegyzés (nem kötelező)
+					{t('weight.noteOptional')}
 					<input
 						name="note"
 						maxlength="200"
@@ -296,19 +313,19 @@
 					{/if}
 				</label>
 
-				<button type="submit">Mérés mentése</button>
+				<button type="submit">{t('weight.save')}</button>
 			</form>
 		</details>
 	{:else if tab === 'photos'}
 		<PhotoGallery petId={data.pet.id} photos={data.photos} />
 	{:else}
 		{#if saved}
-			<p role="status"><ins>Mentve.</ins></p>
+			<p role="status"><ins>{t('pet.saved')}</ins></p>
 		{/if}
 
 		<form method="post" action="?/update" use:enhance>
 			<label>
-				Név
+				{t('pet.name')}
 				<input
 					name="name"
 					maxlength="60"
@@ -320,7 +337,7 @@
 			</label>
 
 			<label>
-				Faj
+				{t('pet.species')}
 				<select
 					name="species"
 					aria-invalid={failed?.errors.species ? 'true' : undefined}
@@ -328,14 +345,16 @@
 					required
 				>
 					{#each SPECIES as species (species)}
-						<option value={species} selected={values.species === species}>{species}</option>
+						<option value={species} selected={values.species === species}
+							>{speciesLabel(species, t)}</option
+						>
 					{/each}
 				</select>
 				{#if failed?.errors.species}<small class="error">{failed.errors.species}</small>{/if}
 			</label>
 
 			<label>
-				Fajta (nem kötelező)
+				{t('pet.breedOptional')}
 				<BreedInput
 					species={currentSpecies}
 					value={values.breed ?? ''}
@@ -345,7 +364,7 @@
 			</label>
 
 			<label>
-				Születési dátum (nem kötelező)
+				{t('pet.birthDateOptional')}
 				<input
 					type="date"
 					name="birthDate"
@@ -357,7 +376,7 @@
 			</label>
 
 			<label>
-				Megjegyzés (nem kötelező)
+				{t('pet.notesOptional')}
 				<textarea
 					name="notes"
 					maxlength="500"
@@ -367,25 +386,25 @@
 				{#if failed?.errors.notes}<small class="error">{failed.errors.notes}</small>{/if}
 			</label>
 
-			<button type="submit">Mentés</button>
+			<button type="submit">{t('pet.save')}</button>
 		</form>
 
 		<div class="danger-zone">
-			<h3><Icon name="alert" /> Veszélyes zóna</h3>
-			<p class="muted">
-				A kedvenc törlésével az összes mérése és fotója is törlődik. Ez nem vonható vissza.
-			</p>
+			<h3><Icon name="alert" /> {t('pet.danger.title')}</h3>
+			<p class="muted">{t('pet.danger.text')}</p>
 			<!-- Plain POST (no use:enhance): the server redirects to /pets afterwards. -->
 			<form
 				method="post"
 				action="?/delete"
 				onsubmit={(event) => {
-					if (!confirm(`Biztosan törlöd: ${data.pet.name}? Ez nem vonható vissza.`)) {
+					if (!confirm(t('pet.danger.confirm', { name: data.pet.name }))) {
 						event.preventDefault();
 					}
 				}}
 			>
-				<button type="submit" class="danger outline"><Icon name="trash" /> Kedvenc törlése</button>
+				<button type="submit" class="danger outline"
+					><Icon name="trash" /> {t('pet.danger.button')}</button
+				>
 			</form>
 		</div>
 	{/if}
