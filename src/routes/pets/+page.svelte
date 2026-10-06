@@ -7,6 +7,17 @@
 
 	const failed = $derived(form?.success === false ? form : null);
 	const today = new Date().toISOString().slice(0, 10);
+
+	// Rough age text from a YYYY-MM-DD birth date.
+	function ageText(birthDate: string): string {
+		const born = new Date(birthDate);
+		const now = new Date();
+		let months = (now.getFullYear() - born.getFullYear()) * 12 + now.getMonth() - born.getMonth();
+		if (now.getDate() < born.getDate()) months--;
+		if (months < 1) return '1 hónapnál fiatalabb';
+		if (months < 12) return `${months} hónapos`;
+		return `${Math.floor(months / 12)} éves`;
+	}
 </script>
 
 <svelte:head>
@@ -16,20 +27,26 @@
 <h1>Kedvenceim</h1>
 
 {#if data.pets.length === 0}
-	<p>Még nincs kedvenced. Add hozzá az elsőt az alábbi űrlappal.</p>
+	<article class="empty">
+		<p class="muted">Még nincs kedvenced. Add hozzá az elsőt az alábbi űrlappal.</p>
+	</article>
 {:else}
-	<div class="grid">
+	<div class="card-grid">
 		{#each data.pets as pet (pet.id)}
-			<article>
+			<article class="pet-card">
 				{#if data.avatars[pet.id]}
 					<img class="avatar" src={data.avatars[pet.id]} alt="{pet.name} fotója" loading="lazy" />
+				{:else}
+					<div class="avatar placeholder" aria-hidden="true">
+						{pet.name.slice(0, 1).toUpperCase()}
+					</div>
 				{/if}
 				<h3><a href="/pets/{pet.id}">{pet.name}</a></h3>
-				<p>
+				<p class="muted">
 					{pet.species}{#if pet.breed}&nbsp;· {pet.breed}{/if}
 				</p>
 				{#if pet.birthDate}
-					<small>Született: {pet.birthDate}</small>
+					<small class="muted">{ageText(pet.birthDate)} · született: {pet.birthDate}</small>
 				{/if}
 			</article>
 		{/each}
@@ -104,14 +121,25 @@
 </details>
 
 <style>
-	.avatar {
-		width: 4rem;
-		height: 4rem;
-		object-fit: cover;
-		border-radius: 50%;
+	.pet-card {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
 	}
 
-	.error {
-		color: var(--pico-del-color);
+	.pet-card h3,
+	.pet-card p {
+		margin: 0;
+	}
+
+	.placeholder {
+		display: grid;
+		place-items: center;
+		background: var(--gh-subtle);
+		border: 1px solid var(--gh-border);
+		color: var(--gh-muted);
+		font-size: 1.5rem;
+		font-weight: 600;
 	}
 </style>

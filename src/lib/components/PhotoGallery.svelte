@@ -83,52 +83,55 @@
 </script>
 
 <section>
-	<h2>Fotók</h2>
-
-	<form method="POST" action="?/photoAdd" use:enhance={handleAdd}>
-		<label>
-			Kép kiválasztása
-			<input type="file" accept="image/*" bind:this={fileInput} disabled={busy} />
-		</label>
-		<label>
-			Felirat (nem kötelező)
-			<input type="text" name="caption" maxlength="200" disabled={busy} />
-		</label>
-		<button type="submit" aria-busy={busy} disabled={busy}>
-			{busy ? 'Feltöltés...' : 'Feltöltés'}
-		</button>
-		{#if busy}
-			<progress value={progress} max="100"></progress>
-		{/if}
-		{#if errorMessage}
-			<p class="error" role="alert">{errorMessage}</p>
-		{/if}
-	</form>
+	<article>
+		<form method="POST" action="?/photoAdd" use:enhance={handleAdd}>
+			<label>
+				Kép kiválasztása
+				<input type="file" accept="image/*" bind:this={fileInput} disabled={busy} />
+			</label>
+			<label>
+				Felirat (nem kötelező)
+				<input type="text" name="caption" maxlength="200" disabled={busy} />
+			</label>
+			<button type="submit" aria-busy={busy} disabled={busy}>
+				{busy ? 'Feltöltés...' : 'Feltöltés'}
+			</button>
+			{#if busy}
+				<progress value={progress} max="100" aria-label="Feltöltés állapota"></progress>
+			{/if}
+			{#if errorMessage}
+				<p class="error" role="alert">{errorMessage}</p>
+			{/if}
+		</form>
+	</article>
 
 	{#if photos.length === 0}
-		<p>Még nincs feltöltött fotó.</p>
+		<article class="empty">
+			<p class="muted">Még nincs feltöltött fotó.</p>
+		</article>
 	{:else}
 		<ul class="gallery">
 			{#each photos as photo (photo.id)}
-				<li>
+				<li class="tile">
 					<a href={photo.url} target="_blank" rel="noreferrer">
 						<img src={photo.thumbUrl} alt={photo.caption ?? 'A kedvenc fotója'} loading="lazy" />
+						{#if photo.isAvatar}<span class="badge">Avatar</span>{/if}
 					</a>
 					{#if photo.caption}
-						<small>{photo.caption}</small>
+						<small class="caption">{photo.caption}</small>
 					{/if}
-					{#if photo.isAvatar}
-						<small><mark>Avatar</mark></small>
-					{:else}
-						<form method="POST" action="?/photoSetAvatar" use:enhance>
+					<div class="actions">
+						{#if !photo.isAvatar}
+							<form method="POST" action="?/photoSetAvatar" use:enhance>
+								<input type="hidden" name="photoId" value={photo.id} />
+								<button type="submit" class="outline small">Avatar legyen</button>
+							</form>
+						{/if}
+						<form method="POST" action="?/photoDelete" use:enhance={confirmDelete}>
 							<input type="hidden" name="photoId" value={photo.id} />
-							<button type="submit" class="outline">Avatar legyen</button>
+							<button type="submit" class="outline secondary small">Törlés</button>
 						</form>
-					{/if}
-					<form method="POST" action="?/photoDelete" use:enhance={confirmDelete}>
-						<input type="hidden" name="photoId" value={photo.id} />
-						<button type="submit" class="outline secondary">Törlés</button>
-					</form>
+					</div>
 				</li>
 			{/each}
 		</ul>
@@ -144,14 +147,59 @@
 		list-style: none;
 	}
 
+	.tile {
+		position: relative;
+		margin: 0;
+		padding: 0.5rem;
+		border: 1px solid var(--gh-border);
+		border-radius: var(--pico-border-radius);
+		background: var(--gh-canvas);
+	}
+
+	.tile a {
+		position: relative;
+		display: block;
+	}
+
 	img {
 		width: 100%;
 		aspect-ratio: 1;
 		object-fit: cover;
 		border-radius: var(--pico-border-radius);
+		display: block;
 	}
 
-	.error {
-		color: var(--pico-del-color);
+	.badge {
+		position: absolute;
+		top: 0.4rem;
+		left: 0.4rem;
+		padding: 0.1rem 0.5rem;
+		border-radius: 2rem;
+		background: var(--gh-success);
+		color: #fff;
+		font-size: 0.75rem;
+		font-weight: 600;
+	}
+
+	.caption {
+		display: block;
+		margin-top: 0.4rem;
+		color: var(--gh-muted);
+		overflow-wrap: anywhere;
+	}
+
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-top: 0.5rem;
+	}
+
+	.actions form {
+		margin: 0;
+	}
+
+	progress {
+		margin-block: 0.75rem;
 	}
 </style>

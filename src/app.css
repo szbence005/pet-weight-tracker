@@ -1,0 +1,332 @@
+/* GitHub look on top of Pico. Tokens first, then mapping onto --pico-* variables. */
+:root {
+	--gh-canvas: #ffffff;
+	--gh-subtle: #f6f8fa;
+	--gh-hover: #eaeef2;
+	--gh-border: #d0d7de;
+	--gh-text: #1f2328;
+	--gh-muted: #656d76;
+	--gh-accent: #0969da;
+	--gh-success: #1f883d;
+	--gh-success-hover: #1a7f37;
+	--gh-danger: #cf222e;
+	--gh-header: #24292f;
+	--gh-mark: #fff8c5;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--gh-canvas: #0d1117;
+		--gh-subtle: #161b22;
+		--gh-hover: #21262d;
+		--gh-border: #30363d;
+		--gh-text: #e6edf3;
+		--gh-muted: #8d96a0;
+		--gh-accent: #4493f8;
+		--gh-success: #238636;
+		--gh-success-hover: #2ea043;
+		--gh-danger: #f85149;
+		--gh-header: #161b22;
+		--gh-mark: #bb800926;
+	}
+}
+
+/* Pico defines its theme on :root:not([data-theme=dark]) (higher specificity than :root),
+   so we use a selector of the same weight and load after it. */
+:root:not([data-theme='none']) {
+	color-scheme: light dark;
+	--pico-font-family:
+		-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+	--pico-font-size: 87.5%;
+	--pico-border-radius: 6px;
+	--pico-border-width: 1px;
+	--pico-block-spacing-vertical: 1rem;
+	--pico-block-spacing-horizontal: 1rem;
+	--pico-form-element-spacing-vertical: 0.45rem;
+	--pico-form-element-spacing-horizontal: 0.75rem;
+
+	--pico-background-color: var(--gh-canvas);
+	--pico-color: var(--gh-text);
+	--pico-muted-color: var(--gh-muted);
+	--pico-muted-border-color: var(--gh-border);
+
+	--pico-primary: var(--gh-accent);
+	--pico-primary-hover: var(--gh-accent);
+	--pico-primary-underline: transparent;
+	--pico-primary-background: var(--gh-success);
+	--pico-primary-border: var(--gh-success);
+	--pico-primary-hover-background: var(--gh-success-hover);
+	--pico-primary-hover-border: var(--gh-success-hover);
+	--pico-primary-hover-underline: var(--gh-accent);
+	--pico-primary-focus: color-mix(in srgb, var(--gh-accent) 35%, transparent);
+	--pico-primary-inverse: #fff;
+
+	--pico-secondary: var(--gh-muted);
+	--pico-secondary-hover: var(--gh-text);
+	--pico-secondary-background: var(--gh-subtle);
+	--pico-secondary-border: var(--gh-border);
+	--pico-secondary-hover-background: var(--gh-hover);
+	--pico-secondary-hover-border: var(--gh-border);
+	--pico-secondary-focus: var(--pico-primary-focus);
+	--pico-secondary-inverse: var(--gh-text);
+
+	--pico-form-element-background-color: var(--gh-canvas);
+	--pico-form-element-border-color: var(--gh-border);
+	--pico-form-element-color: var(--gh-text);
+	--pico-form-element-active-background-color: var(--gh-canvas);
+	--pico-form-element-active-border-color: var(--gh-accent);
+	--pico-form-element-focus-color: var(--gh-accent);
+	--pico-form-element-invalid-border-color: var(--gh-danger);
+	--pico-form-element-invalid-active-border-color: var(--gh-danger);
+	--pico-form-element-invalid-focus-color: var(--gh-danger);
+
+	--pico-card-background-color: var(--gh-canvas);
+	--pico-card-border-color: var(--gh-border);
+	--pico-card-box-shadow: none;
+	--pico-card-sectioning-background-color: var(--gh-subtle);
+
+	--pico-table-border-color: var(--gh-border);
+	--pico-table-row-stripped-background-color: var(--gh-subtle);
+
+	--pico-del-color: var(--gh-danger);
+	--pico-ins-color: var(--gh-success);
+	--pico-mark-background-color: var(--gh-mark);
+	--pico-mark-color: var(--gh-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	color: var(--gh-text);
+}
+h1 {
+	font-size: 1.6rem;
+}
+h2 {
+	font-size: 1.25rem;
+}
+h3 {
+	font-size: 1.1rem;
+}
+article {
+	border: 1px solid var(--gh-border);
+}
+
+/* Utilities */
+.error {
+	color: var(--gh-danger);
+}
+.muted {
+	color: var(--gh-muted);
+}
+.stack > * + * {
+	margin-top: 1rem;
+}
+.small {
+	width: auto;
+	margin: 0;
+	padding: 0.2rem 0.6rem;
+	font-size: 0.85rem;
+}
+td form {
+	margin: 0;
+}
+
+.page {
+	width: 100%;
+	max-width: 1012px;
+	margin: 0 auto;
+	padding-inline: 1rem;
+}
+main.page {
+	padding-block: 1.5rem 3rem;
+}
+.auth {
+	max-width: 340px;
+	margin: 1.5rem auto;
+}
+.auth-wide {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 1rem;
+	max-width: 720px;
+	margin: 1.5rem auto;
+}
+.empty {
+	text-align: center;
+	padding: 2rem 1rem;
+}
+.card-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 1rem;
+}
+.avatar {
+	width: 4rem;
+	height: 4rem;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+/* Top bar */
+.topbar {
+	background: var(--gh-header);
+	color: #fff;
+}
+.topbar a {
+	color: #fff;
+	text-decoration: none;
+}
+.bar {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	flex-wrap: wrap;
+	min-height: 3.5rem;
+	padding-block: 0.5rem;
+}
+.brand {
+	font-weight: 600;
+}
+.bar nav a {
+	padding-block: 0.25rem;
+	border-bottom: 2px solid transparent;
+	opacity: 0.85;
+}
+.bar nav a[aria-current='page'] {
+	opacity: 1;
+	font-weight: 600;
+	border-bottom-color: #fd8c73;
+}
+.bar-end {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+.bar-end form {
+	margin: 0;
+}
+.who {
+	max-width: 9rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.topbar .topbtn {
+	width: auto;
+	margin: 0;
+	padding: 0.25rem 0.75rem;
+	font-size: 0.85rem;
+	background: transparent;
+	color: #fff;
+	border: 1px solid rgb(255 255 255 / 0.35);
+}
+.topbar .topbtn:hover:not(:disabled) {
+	background: rgb(255 255 255 / 0.12);
+	color: #fff;
+}
+@media (max-width: 480px) {
+	.who {
+		display: none;
+	}
+}
+
+/* Tabs */
+.tabs {
+	display: flex;
+	gap: 0.25rem;
+	border-bottom: 1px solid var(--gh-border);
+	margin-bottom: 1.25rem;
+	overflow-x: auto;
+}
+.tabs [role='tab'] {
+	width: auto;
+	margin: 0;
+	padding: 0.5rem 0.9rem;
+	white-space: nowrap;
+	background: none;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	border-radius: 0;
+	color: var(--gh-muted);
+	box-shadow: none;
+}
+.tabs [role='tab']:hover:not(:disabled) {
+	background: none;
+	color: var(--gh-text);
+}
+.tabs [role='tab'][aria-selected='true'] {
+	color: var(--gh-text);
+	font-weight: 600;
+	border-bottom-color: #fd8c73;
+}
+
+/* Pet page */
+.pet-head h1 {
+	margin-bottom: 0.25rem;
+}
+.chart-box {
+	position: relative;
+	height: 320px;
+	margin-bottom: 1.25rem;
+}
+.danger-zone {
+	border: 1px solid var(--gh-danger);
+	border-radius: 6px;
+	padding: 1rem;
+}
+.danger-zone h3 {
+	color: var(--gh-danger);
+	margin-bottom: 0.5rem;
+}
+button.danger {
+	--pico-background-color: var(--gh-canvas);
+	--pico-color: var(--gh-danger);
+	--pico-border-color: var(--gh-danger);
+}
+button.danger:hover:not(:disabled) {
+	--pico-background-color: var(--gh-danger);
+	--pico-color: #fff;
+	--pico-border-color: var(--gh-danger);
+}
+
+/* Accessibility */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[role='tab']:focus-visible {
+	outline: 2px solid var(--gh-accent);
+	outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation: none !important;
+		transition: none !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* details-button: the "add" disclosure buttons (pets list, weights) */
+details > summary[role='button'] {
+  display: inline-block;
+  width: auto;
+  margin-bottom: 0;
+}
+details > summary[role='button']::after {
+  display: none;
+}
+details[open] > form {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--gh-border);
+  border-radius: 6px;
+}
+.card-grid {
+  margin-bottom: 1.5rem;
+}

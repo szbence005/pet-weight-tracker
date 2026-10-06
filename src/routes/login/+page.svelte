@@ -9,7 +9,7 @@
 	<title>Belépés</title>
 </svelte:head>
 
-<div class="grid">
+<div class="auth-wide">
 	<article>
 		<h2>Belépés</h2>
 		<form method="post" action="?/signIn" use:enhance>
@@ -32,6 +32,7 @@
 			{/if}
 			<button type="submit">Belépés</button>
 		</form>
+		<p class="muted"><small><a href="/forgot-password">Elfelejtett jelszó?</a></small></p>
 	</article>
 
 	<article>
@@ -62,9 +63,3 @@
 		</form>
 	</article>
 </div>
-
-<style>
-	.error {
-		color: var(--pico-del-color);
-	}
-</style>
