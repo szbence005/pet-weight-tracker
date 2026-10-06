@@ -15,6 +15,8 @@
 	let { petId, photos }: { petId: string; photos: Photo[] } = $props();
 
 	let fileInput: HTMLInputElement | undefined = $state();
+	let cameraInput: HTMLInputElement | undefined = $state();
+	let cameraForm: HTMLFormElement | undefined = $state();
 	let busy = $state(false);
 	let progress = $state(0);
 	let errorMessage = $state('');
@@ -45,38 +47,44 @@
 	}
 
 	// Runs before the form is sent: resize, upload, then add the fileId to the form data.
-	const handleAdd: SubmitFunction = async ({ formData, cancel }) => {
-		errorMessage = '';
-		const file = fileInput?.files?.[0];
-		if (!file) {
-			errorMessage = 'Válassz ki egy képet.';
-			cancel();
-			return;
-		}
-
-		busy = true;
-		progress = 0;
-		try {
-			const resized = await resizeImage(file);
-			const fileId = await uploadToImageKit(resized);
-			formData.set('fileId', fileId);
-		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : 'A feltöltés nem sikerült.';
-			busy = false;
-			cancel();
-			return;
-		}
-
-		return async ({ result, update }) => {
-			busy = false;
-			if (result.type === 'failure') {
-				const message = result.data?.photoError;
-				errorMessage = typeof message === 'string' ? message : 'A mentés nem sikerült.';
+	// Used by both the normal file form and the camera form; they differ only in the input.
+	function makeAddHandler(getInput: () => HTMLInputElement | undefined): SubmitFunction {
+		return async ({ formData, cancel }) => {
+			errorMessage = '';
+			const file = getInput()?.files?.[0];
+			if (!file) {
+				errorMessage = 'Válassz ki egy képet.';
+				cancel();
 				return;
 			}
-			await update();
+
+			busy = true;
+			progress = 0;
+			try {
+				const resized = await resizeImage(file);
+				const fileId = await uploadToImageKit(resized);
+				formData.set('fileId', fileId);
+			} catch (error) {
+				errorMessage = error instanceof Error ? error.message : 'A feltöltés nem sikerült.';
+				busy = false;
+				cancel();
+				return;
+			}
+
+			return async ({ result, update }) => {
+				busy = false;
+				if (result.type === 'failure') {
+					const message = result.data?.photoError;
+					errorMessage = typeof message === 'string' ? message : 'A mentés nem sikerült.';
+					return;
+				}
+				await update();
+			};
 		};
-	};
+	}
+
+	const handleAdd = makeAddHandler(() => fileInput);
+	const handleCamera = makeAddHandler(() => cameraInput);
 
 	const confirmDelete: SubmitFunction = ({ cancel }) => {
 		if (!confirm('Biztosan törlöd ezt a fotót?')) cancel();
@@ -85,6 +93,24 @@
 
 <section>
 	<article>
+		<!-- Quick upload: on a phone `capture` opens the camera, on a computer a normal file picker.
+		     The upload starts as soon as a photo has been taken or chosen (no caption). -->
+		<form method="POST" action="?/photoAdd" use:enhance={handleCamera} bind:this={cameraForm}>
+			<input
+				type="file"
+				accept="image/*"
+				capture="environment"
+				hidden
+				bind:this={cameraInput}
+				onchange={() => cameraForm?.requestSubmit()}
+			/>
+			<button type="button" disabled={busy} onclick={() => cameraInput?.click()}>
+				<Icon name="camera" /> Fotó készítése
+			</button>
+		</form>
+
+		<hr />
+
 		<form method="POST" action="?/photoAdd" use:enhance={handleAdd}>
 			<label>
 				Kép kiválasztása
@@ -94,16 +120,17 @@
 				Felirat (nem kötelező)
 				<input type="text" name="caption" maxlength="200" disabled={busy} />
 			</label>
-			<button type="submit" aria-busy={busy} disabled={busy}>
+			<button type="submit" class="secondary" aria-busy={busy} disabled={busy}>
 				{busy ? 'Feltöltés...' : 'Feltöltés'}
 			</button>
-			{#if busy}
-				<progress value={progress} max="100" aria-label="Feltöltés állapota"></progress>
-			{/if}
-			{#if errorMessage}
-				<p class="error" role="alert">{errorMessage}</p>
-			{/if}
 		</form>
+
+		{#if busy}
+			<progress value={progress} max="100" aria-label="Feltöltés állapota"></progress>
+		{/if}
+		{#if errorMessage}
+			<p class="error" role="alert">{errorMessage}</p>
+		{/if}
 	</article>
 
 	{#if photos.length === 0}

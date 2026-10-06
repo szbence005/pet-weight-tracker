@@ -16,7 +16,6 @@
 <input
 	name="breed"
 	maxlength="60"
-	autocomplete="off"
 	{value}
 	list={isTurtle ? listId : undefined}
 	aria-invalid={invalid ? 'true' : undefined}
