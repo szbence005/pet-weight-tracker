@@ -1,5 +1,7 @@
 # Pet Weight Tracker
 
+**https://pet-weight-tracker-taupe.vercel.app/**
+
 A small web app for tracking the weight of your pets over time, keeping their photos, and recording which pets live together. The interface is available in **Hungarian and English**.
 
 Originally built for tracking the growth of pet turtles, but it works for any pet (dog, cat, rabbit, hamster, bird, fish, ...).
